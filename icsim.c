@@ -20,7 +20,6 @@
 #include <SDL2/SDL_image.h>
 #include <SDL_ttf.h>
 #include "lib.h"
-#include <dbus-1.0/dbus/dbus.h>
 #include <stdbool.h>
 #ifndef DATA_DIR
 #define DATA_DIR "./data/"  // Needs trailing slash
@@ -197,7 +196,7 @@ void update_speed() {
 void update_AC() {
    
     if(ac==0)
-    	SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
+    SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
     if(ac==1)
     {
         SDL_RenderFillRect(renderer, &AC_dis);
@@ -223,6 +222,11 @@ void update_brake() {
     {
        SDL_RenderFillRect(renderer, &brake_dis);
        SDL_RenderCopy(renderer, brake_tex1, NULL, &brake_dis);
+    }
+    else if(Brake==3)
+    {
+       SDL_RenderFillRect(renderer, &brake_dis);
+       
     }
      
     
@@ -448,6 +452,9 @@ void update_brake_state(struct canfd_frame *cf, int maxdlen) {
     else{
         Brake=2;
     }
+    if(cf->data[brake_pos] & CAN_RIGHT_SIGNAL) {
+        Brake=3;
+    } 
     update_brake();
     SDL_RenderPresent(renderer);
    
@@ -471,11 +478,10 @@ void update_AC_state(struct canfd_frame *cf, int maxdlen) {
     if(len < AC_pos) return;
     if(cf->data[AC_pos]& CAN_LEFT_SIGNAL) {
         ac=1;
-        printf("111111111\n");
+        
     } 
     else{
         ac=2;
-        printf("2222222222\n");
     }
     update_AC();
     SDL_RenderPresent(renderer);
@@ -584,61 +590,8 @@ void Usage(char *msg) {
     printf("\t-m\tmodel NAME  (Ex: -m bmw)\n");
     exit(1);
 }
-void listen1()
-{
-	DBusMessage* msg;
-	DBusMessage* reply;
-	DBusMessageIter args;
-	DBusConnection* conn;
-	DBusError err;
-	int ret;
-	char* param;
-	printf("Listening for method calls\n");
-	// initialise the error
-	dbus_error_init(&err);
-	// connect to the bus and check for errors
-	conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-	if (dbus_error_is_set(&err)) {
-	fprintf(stderr, "Connection Error (%s)\n", err.message);
-	dbus_error_free(&err);
-	}
-	if (NULL == conn) {
-	fprintf(stderr, "Connection Null\n");
-	exit(1);
-	}
-	// request our name on the bus and check for errors
-	ret = dbus_bus_request_name(conn, "icsim.method.server",
-	DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
-	if (dbus_error_is_set(&err)) {
-	fprintf(stderr, "Name Error (%s)\n", err.message);
-	dbus_error_free(&err);
-	}
-	if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) {
-	fprintf(stderr, "Not Primary Owner (%d)\n", ret);
-	exit(1);
-	}
-	// loop, testing for new messages
-	while (true) {
-	// non blocking read of the next available message
-	dbus_connection_read_write(conn, 0);
-	msg = dbus_connection_pop_message(conn);
-	// loop again if we haven't got a message
-	if (NULL == msg) {
-	sleep(1);
-	continue;
-	}
-	// check this is a method call for the right interface & method
-	if (dbus_message_is_method_call(msg, "test.method.Type", "Method")){
-        Park=2;
-        update_park();
-        printf("%d",Park);
-		break;
-	}
-	
-	// free the message
-	dbus_message_unref(msg);
-}
-}
+
+
 int main(int argc, char *argv[]) {
     int opt;
     int can;
@@ -689,10 +642,7 @@ int main(int argc, char *argv[]) {
     TTF_SizeUTF8(font, cc11, &ww, &hh);
     SDL_Event event;
 
-    char* param = "no param";
-	if (3 >= argc && NULL != argv[2]) param = argv[2];
-	if (0 == strcmp(argv[1], "listen"))
-	listen1();
+    
 	
 
     while ((opt = getopt(argc, argv, "rs:dm:h?")) != -1) {
@@ -887,6 +837,7 @@ int main(int argc, char *argv[]) {
                     redraw_ic();
                     break;
                 }
+                
             }
             SDL_Delay(3);
         }
