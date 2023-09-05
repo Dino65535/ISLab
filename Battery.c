@@ -19,7 +19,7 @@
 #include "cJSON.h"
 
 #ifndef DATA_DIR
-#define DATA_DIR "./data/"
+#define DATA_DIR "./img/"
 #endif
 
 #define DEFAULT_battery_ID 700

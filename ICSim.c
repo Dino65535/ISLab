@@ -1,9 +1,3 @@
-/*
- * Instrument cluster simulator
- *
- * (c) 2014 Open Garages - Craig Smith <craig@theialabs.com>
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,20 +13,22 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL_ttf.h>
-#include "lib.h"
 #include <stdbool.h>
+
 #ifndef DATA_DIR
-#define DATA_DIR "./data/"  // Needs trailing slash
+#define DATA_DIR "./img/"  // Needs trailing slash
 #endif
+
 #define DEFAULT_battery_ID 700
 #define DEFAULT_save_ID 950
 #define DEFAULT_AC_ID 800
 #define DEFAULT_brake_ID 600
 #define DEFAULT_park_ID 900
-#define DEFAULT_battery_BYTE 0
-#define DEFAULT_AC_BYTE 0
+#define DEFAULT_BYTE 0
+
 #define SCREEN_WIDTH 692
 #define SCREEN_HEIGHT 329
+
 #define DOOR_LOCKED 0
 #define DOOR_UNLOCKED 1
 #define OFF 0
@@ -50,15 +46,6 @@
 #define DEFAULT_SPEED_ID 580 // 0x244
 #define DEFAULT_SPEED_BYTE 3 // bytes 3,4
 
-// For now, specific models will be done as constants.  Later
-// We should use a config file
-#define MODEL_BMW_X1_SPEED_ID 0x1B4
-#define MODEL_BMW_X1_SPEED_BYTE 0
-#define MODEL_BMW_X1_RPM_ID 0x0AA
-#define MODEL_BMW_X1_RPM_BYTE 4
-#define MODEL_BMW_X1_HANDBRAKE_ID 0x1B4  // Not implemented yet
-#define MODEL_BMW_X1_HANDBRAKE_BYTE 5
-
 const int canfd_on = 1;
 int debug = 0;
 int ac=0;
@@ -72,11 +59,11 @@ int seed = 0;
 int door_pos = DEFAULT_DOOR_BYTE;
 int signal_pos = DEFAULT_SIGNAL_BYTE;
 int speed_pos = DEFAULT_SPEED_BYTE;
-int AC_pos = DEFAULT_AC_BYTE;
-int battery_pos = DEFAULT_battery_BYTE;
-int save_pos = DEFAULT_battery_BYTE;
-int brake_pos = DEFAULT_battery_BYTE;
-int park_pos = DEFAULT_battery_BYTE;
+int AC_pos = DEFAULT_BYTE;
+int battery_pos = DEFAULT_BYTE;
+int save_pos = DEFAULT_BYTE;
+int brake_pos = DEFAULT_BYTE;
+int park_pos = DEFAULT_BYTE;
 long current_speed = 0;
 int door_status[4];
 int turn_status[2];
@@ -129,14 +116,11 @@ SDL_Rect brake_dis = { 0, 250, 70, 70};
 SDL_Rect park_dis = { 90, 250, 70, 70};
 SDL_Rect save_dis = { 180, 250, 80, 80};
 
-// Simple map function
+
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-// Adds data dir to file name
-// Uses a single pointer so not to have a memory leak
-// returns point to data_files or NULL if append is too large
 char *get_data(char *fname) {
     if(strlen(DATA_DIR) + strlen(fname) > 255) return NULL;
     strncpy(data_file, DATA_DIR, 255);
@@ -144,7 +128,6 @@ char *get_data(char *fname) {
     return data_file;
 }
 
-/* Default vehicle state */
 void init_car_state() {
     door_status[0] = DOOR_LOCKED;
     door_status[1] = DOOR_LOCKED;
@@ -154,15 +137,10 @@ void init_car_state() {
     turn_status[1] = OFF;
 }
 
-/* Empty IC */
 void blank_ic() {
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
 }
 
-
-
-
-/* Updates speedo */
 void update_speed() {
     SDL_Rect dial_rect;
     SDL_Point center;
@@ -192,150 +170,105 @@ void update_speed() {
     SDL_RenderCopyEx(renderer, needle_tex, NULL, &speed_rect, angle, &center, SDL_FLIP_NONE);
 }
 
-
 void update_AC() {
-   
     if(ac==0)
-    SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
-    if(ac==1)
-    {
+        SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
+    if(ac==1) {
         SDL_RenderFillRect(renderer, &AC_dis);
         SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
-    }
-    else if(ac==2)
-    {   
-       SDL_RenderFillRect(renderer, &AC_dis);
+    } else if(ac==2) {
+        SDL_RenderFillRect(renderer, &AC_dis);
         SDL_RenderCopy(renderer, AC_tex1, NULL, &AC_dis);
     }
-    
 }
 
 void update_brake() {
     if(Brake==0)
-    SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
-    if(Brake==1)
-    {
+        SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
+    if(Brake==1) {
         SDL_RenderFillRect(renderer, &brake_dis);
         SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
+    } else if(Brake==2) {
+        SDL_RenderFillRect(renderer, &brake_dis);
+        SDL_RenderCopy(renderer, brake_tex1, NULL, &brake_dis);
+    } else if(Brake==3) {
+        SDL_RenderFillRect(renderer, &brake_dis);
     }
-    else if(Brake==2)
-    {
-       SDL_RenderFillRect(renderer, &brake_dis);
-       SDL_RenderCopy(renderer, brake_tex1, NULL, &brake_dis);
-    }
-    else if(Brake==3)
-    {
-       SDL_RenderFillRect(renderer, &brake_dis);
-       
-    }
-     
-    
 }
+
 void update_save() {
-   
-     if(save==0)
-    SDL_RenderCopy(renderer, save_tex, NULL, &save_dis);
-    if(save==1)
-    {
+    if(save==0)
+        SDL_RenderCopy(renderer, save_tex, NULL, &save_dis);
+    if(save==1) {
         SDL_RenderFillRect(renderer, &save_dis);
         SDL_RenderCopy(renderer, save_tex, NULL, &save_dis);
-    }
-    else if(save==2)
-    {   
-       SDL_RenderFillRect(renderer, &save_dis);
+    } else if(save==2) {
+        SDL_RenderFillRect(renderer, &save_dis);
         SDL_RenderCopy(renderer, save_tex1, NULL, &save_dis);
     }
-    
 }
+
 void update_park() {
     if(Park==0)
-    SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
-    if(Park==1)
-    {
+        SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
+    if(Park==1) {
         SDL_RenderFillRect(renderer, &park_dis);
-         SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
+        SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
+    } else if(Park==2) {
+        SDL_RenderFillRect(renderer, &park_dis);
+        SDL_RenderCopy(renderer, park_tex1, NULL, &park_dis);
     }
-    else if(Park==2)
-    {
-       SDL_RenderFillRect(renderer, &park_dis);
-       SDL_RenderCopy(renderer, park_tex1, NULL, &park_dis);
-    }
-    
-    
 }
 
-
-//new
 void update_battery() {
     if(battery==0)
-    SDL_RenderCopy(renderer, battery_green_tex, NULL, &batterysize);
+        SDL_RenderCopy(renderer, battery_green_tex, NULL, &batterysize);
     SDL_RenderCopy(renderer, battery_empty_tex, NULL, &batterysize);
-    
-    if(battery==1)
-    {
+
+    if(battery==1) {
         SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
         SDL_RenderCopy(renderer, word100_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word100_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex,  NULL, &batterysize);
-    }
-    else if(battery==2)
-    {
+    } else if(battery==2) {
         SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
         SDL_RenderCopy(renderer, word80_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word80_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex1,  NULL,&batterysize);
-    }
-    else if(battery==3)
-    {
-        
-        
-         SDL_RenderFillRect(renderer, &word1_dis);
+    } else if(battery==3) {
+        SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
         SDL_RenderCopy(renderer, word60_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word60_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex2,  NULL, &batterysize);
-    }
-    else if(battery==4)
-    {
-        
-         
-         SDL_RenderFillRect(renderer, &word1_dis);
+    } else if(battery==4) {
+        SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
         SDL_RenderCopy(renderer, word40_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word40_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex3,  NULL, &batterysize);
-    }
-    else if(battery==5)
-    {
-        
+    } else if(battery==5) {
         SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
-         
         SDL_RenderCopy(renderer, word20_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word20_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex4,  NULL, &batterysize);
-    }
-    else if(battery==6)
-    {
-        
-         SDL_RenderFillRect(renderer, &word1_dis);
+    } else if(battery==6) {
+        SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
-         
         SDL_RenderCopy(renderer, word0_texture1, NULL, &word1_dis);
         SDL_RenderCopy(renderer, word0_texture, NULL, &word_dis);
         SDL_RenderCopy(renderer, battery_green_tex5,  NULL, &batterysize);
-    }
-    else if(battery==100)
-    {
+    } else if(battery==100) {
         SDL_RenderFillRect(renderer, &word1_dis);
         SDL_RenderFillRect(renderer, &word_dis);
         battery=50;
         SDL_RenderCopy(renderer, battery_green_tex, NULL, &batterysize);
     }
 }
-/* Updates door unlocks simulated by door open icons */
+
 void update_doors() {
     SDL_Rect door_area, update, pos;
     door_area.x = 390;
@@ -397,7 +330,6 @@ void update_doors() {
     }
 }
 
-/* Updates turn signals */
 void update_turn_signals() {
     SDL_Rect left, right, lpos, rpos;
     left.x = 213;
@@ -424,9 +356,6 @@ void update_turn_signals() {
     }
 }
 
-/* Redraws the IC updating everything
- * Slowest way to go.  Should only use on init
- */
 void redraw_ic() {
     blank_ic();
     update_speed();
@@ -437,86 +366,77 @@ void redraw_ic() {
     update_brake();
     update_save();
     update_park();
-    
+
     SDL_RenderPresent(renderer);
 }
 
-//new
 void update_brake_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < brake_pos) return;
     if(cf->data[brake_pos]& CAN_LEFT_SIGNAL) {
-        Brake=1;
-        
-    } 
-    else{
-        Brake=2;
+        Brake = 1;
+
+    } else {
+        Brake = 2;
     }
     if(cf->data[brake_pos] & CAN_RIGHT_SIGNAL) {
-        Brake=3;
-    } 
+        Brake = 3;
+    }
     update_brake();
     SDL_RenderPresent(renderer);
-   
 }
+
 void update_park_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < park_pos) return;
     if(cf->data[park_pos]& CAN_LEFT_SIGNAL) {
-        Park=1;
-        
-    } 
-    else{
-        Park=2;
+        Park = 1;
+
+    } else {
+        Park = 2;
     }
     update_park();
     SDL_RenderPresent(renderer);
-   
 }
+
 void update_AC_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < AC_pos) return;
     if(cf->data[AC_pos]& CAN_LEFT_SIGNAL) {
-        ac = 2;      
-    } 
-    else{
+        ac = 2;
+    } else {
         ac = 1;
     }
     update_AC();
     SDL_RenderPresent(renderer);
-   
 }
+
 void update_save_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < save_pos) return;
     if(cf->data[save_pos]& CAN_LEFT_SIGNAL) {
-        save=1;
-        
-    } 
-    else{
-        save=2;
+        save = 1;
+    } else {
+        save = 2;
     }
     update_save();
     SDL_RenderPresent(renderer);
-   
 }
 
-//new
 void update_battery_state(struct canfd_frame *cf, int maxdlen) {
-     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
+    int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < battery_pos) return;
     if(cf->data[battery_pos]& CAN_LEFT_SIGNAL) {
-        if(battery==50)
-         battery=0;
-         battery=battery+1;
+        if(battery == 50)
+            battery = 0;
+        battery = battery+1;
     } else {
-         battery=100;
+        battery = 100;
     }
     update_battery();
     SDL_RenderPresent(renderer);
 }
 
-/* Parses CAN fram and updates current_speed */
 void update_speed_status(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < speed_pos + 1) return;
@@ -534,7 +454,6 @@ void update_speed_status(struct canfd_frame *cf, int maxdlen) {
     SDL_RenderPresent(renderer);
 }
 
-/* Parses CAN frame and updates turn signal status */
 void update_signal_status(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < signal_pos) return;
@@ -552,7 +471,6 @@ void update_signal_status(struct canfd_frame *cf, int maxdlen) {
     SDL_RenderPresent(renderer);
 }
 
-/* Parses CAN frame and updates door status */
 void update_door_status(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < door_pos) return;
@@ -580,19 +498,7 @@ void update_door_status(struct canfd_frame *cf, int maxdlen) {
     SDL_RenderPresent(renderer);
 }
 
-void Usage(char *msg) {
-    if(msg) printf("%s\n", msg);
-    printf("Usage: icsim [options] <can>\n");
-    printf("\t-r\trandomize IDs\n");
-    printf("\t-s\tseed value\n");
-    printf("\t-d\tdebug mode\n");
-    printf("\t-m\tmodel NAME  (Ex: -m bmw)\n");
-    exit(1);
-}
-
-
 int main(int argc, char *argv[]) {
-    int opt;
     int can;
     int n;
     struct ifreq ifr;
@@ -613,8 +519,8 @@ int main(int argc, char *argv[]) {
     TTF_Init();
     TTF_Font *font = TTF_OpenFont("font.ttc", 30);
     int ww=0, hh=0;
-    SDL_Color col={255, 255, 255};
-    SDL_Rect rt={0, 100, 0, 0};
+    SDL_Color col= {255, 255, 255};
+    SDL_Rect rt= {0, 100, 0, 0};
     const char* cc="ok";
     const char* cc1="100%";
     const char* cc2="20m";
@@ -641,44 +547,9 @@ int main(int argc, char *argv[]) {
     TTF_SizeUTF8(font, cc11, &ww, &hh);
     SDL_Event event;
 
-    
-	
-
-    while ((opt = getopt(argc, argv, "rs:dm:h?")) != -1) {
-        switch(opt) {
-        case 'r':
-            randomize = 1;
-            break;
-        case 's':
-            seed = atoi(optarg);
-            break;
-        case 'd':
-            debug = 1;
-            break;
-        case 'm':
-            model = optarg;
-            break;
-        case 'h':
-        case '?':
-        default:
-            Usage(NULL);
-            break;
-        }
-    }
-
-    if (optind >= argc) Usage("You must specify at least one can device");
-
-    if (seed && randomize) Usage("You can not specify a seed value AND randomize the seed");
-
-    // Verify data directory exists
-    if(stat(DATA_DIR, &dirstat) == -1) {
-        printf("ERROR: DATA_DIR not found.  Define in make file or run in src dir\n");
-        exit(34);
-    }
-
     // Create a new raw CAN socket
     can = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    if(can < 0) Usage("Couldn't create raw socket");
+    if(can < 0) exit(1);
 
     addr.can_family = AF_CAN;
     memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
@@ -717,28 +588,6 @@ int main(int argc, char *argv[]) {
     brake_id= DEFAULT_brake_ID;
     park_id= DEFAULT_park_ID;
     save_id= DEFAULT_save_ID;
-    if (randomize || seed) {
-        if(randomize) seed = time(NULL);
-        srand(seed);
-        door_id = (rand() % 2046) + 1;
-        signal_id = (rand() % 2046) + 1;
-        speed_id = (rand() % 2046) + 1;
-        door_pos = rand() % 9;
-        signal_pos = rand() % 9;
-        speed_pos = rand() % 8;
-        printf("Seed: %d\n", seed);
-        FILE *fdseed = fopen("./tmp/icsim_seed.txt", "w");
-        fprintf(fdseed, "%d\n", seed);
-        fclose(fdseed);
-    } else if (model) {
-        if (!strncmp(model, "bmw", 3)) {
-            speed_id = MODEL_BMW_X1_SPEED_ID;
-            speed_pos = MODEL_BMW_X1_SPEED_BYTE;
-        } else {
-            printf("Unknown model.  Acceptable models: bmw\n");
-            exit(3);
-        }
-    }
 
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
@@ -831,12 +680,12 @@ int main(int argc, char *argv[]) {
                 break;
             case SDL_WINDOWEVENT:
                 switch(event.window.event) {
-               
+
                 case SDL_WINDOWEVENT_RESIZED:
                     redraw_ic();
                     break;
                 }
-                
+
             }
             SDL_Delay(3);
         }
@@ -863,7 +712,7 @@ int main(int argc, char *argv[]) {
                 //dropcnt[i] = *(__u32 *)CMSG_DATA(cmsg);
                 fprintf(stderr, "Dropped packet\n");
         }
-//      if(debug) fprint_canframe(stdout, &frame, "\n", 0, maxdlen);
+
         if(frame.can_id == door_id) update_door_status(&frame, maxdlen);
         if(frame.can_id == signal_id) update_signal_status(&frame, maxdlen);
         if(frame.can_id == speed_id) update_speed_status(&frame, maxdlen);

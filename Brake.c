@@ -15,7 +15,7 @@
 #include <stdbool.h>
 
 #ifndef DATA_DIR
-#define DATA_DIR "./data/"
+#define DATA_DIR "./img/"
 #endif
 
 #define DEFAULT_brake_ID 600

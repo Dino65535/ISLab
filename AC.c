@@ -15,7 +15,7 @@
 #include <SDL2/SDL_image.h>
 
 #ifndef DATA_DIR
-#define DATA_DIR "./data/"
+#define DATA_DIR "./img/"
 #endif
 
 #define DEFAULT_AC_ID 800//800
@@ -149,3 +149,4 @@ int main(int argc, char *argv[]) {
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
+//123
