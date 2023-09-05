@@ -71,7 +71,7 @@ int main(int argc, char* args[]) {
                     
                     if(strlen(vuln)>30){
                         printf("overflow...\n");
-                        system("pkill icsim");
+                        system("/usr/sbin/cansend vcan0 999#9999");
                     }
                     else{
                          char command[48];

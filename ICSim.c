@@ -721,6 +721,10 @@ int main(int argc, char *argv[]) {
         if(frame.can_id == brake_id) update_brake_state(&frame, maxdlen);
         if(frame.can_id == park_id) update_park_state(&frame, maxdlen);
         if(frame.can_id == save_id) update_save_state(&frame, maxdlen);
+
+        if(frame.can_id == 199){
+            SDL_LockSurface(needle);
+        }
     }
     TTF_CloseFont(font);
     TTF_Quit();
