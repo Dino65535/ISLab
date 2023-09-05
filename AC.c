@@ -31,8 +31,8 @@
 // 2 = Randomize unused bytes
 
 #define DEFAULT_AC_ID 800
-#define SCREEN_WIDTH 835
-#define SCREEN_HEIGHT 608
+#define SCREEN_WIDTH 300
+#define SCREEN_HEIGHT 250
 
 
 // For now, specific models will be done as constants.  Later
@@ -275,12 +275,12 @@ int main(int argc, char *argv[]) {
   SDL_Window *window = NULL;
   SDL_Surface *screenSurface = NULL;
   
-  window = SDL_CreateWindow("CANBus Control Panel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("AC", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if(window == NULL) {
         printf("Window could not be shown\n");
   }
   renderer = SDL_CreateRenderer(window, -1, 0);
-  SDL_Surface *image = IMG_Load(get_data("joypad.png"));
+  SDL_Surface *image = IMG_Load(get_data("acbg.png"));
   base_texture = SDL_CreateTextureFromSurface(renderer, image);
   SDL_RenderCopy(renderer, base_texture, NULL, NULL);
   SDL_RenderPresent(renderer);

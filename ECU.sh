@@ -11,7 +11,7 @@ interface=$1
 echo "按鍵"
 echo "AC: e/r"
 echo "Battery: q/w"
-echo "brake: u/i"
+echo "brake: u/i/j"
 echo "cardoor: L_shift/R_shift + a/b/x/y"
 echo "Dashboard: UP/DOWN"
 echo "park: o/p"

@@ -34,8 +34,8 @@
 #define DEFAULT_brake_ID 600
 
 
-#define SCREEN_WIDTH 835
-#define SCREEN_HEIGHT 608
+#define SCREEN_WIDTH 300
+#define SCREEN_HEIGHT 250
 #define MAX_SPEED 240.0 // Limiter 260.0 is full guage speed
 #define ACCEL_RATE 8.0 // 0-MAX_SPEED in seconds
 
@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
   SDL_Window *window = NULL;
   SDL_Surface *screenSurface = NULL;
   
-  window = SDL_CreateWindow("CANBus Control Panel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("brake", 301, 300, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if(window == NULL) {
         printf("Window could not be shown\n");
   }

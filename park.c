@@ -36,8 +36,8 @@
 
 #define DEFAULT_park_ID 900
 
-#define SCREEN_WIDTH 835
-#define SCREEN_HEIGHT 608
+#define SCREEN_WIDTH 300
+#define SCREEN_HEIGHT 250
 
 
 
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
   SDL_Window *window = NULL;
   SDL_Surface *screenSurface = NULL;
   
-  window = SDL_CreateWindow("CANBus Control Panel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("park", 602, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if(window == NULL) {
         printf("Window could not be shown\n");
   }
