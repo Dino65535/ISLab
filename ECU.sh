@@ -14,8 +14,8 @@ echo "Battery: q/w"
 echo "Brake: u/i/j"
 echo "Cardoor: L_shift/R_shift + a/b/x/y"
 echo "Dashboard: UP/DOWN"
-echo "park: o/p"
-echo "seatbelt: k/l"
-echo "turnsignal: RIGHT/LEFT"
+echo "Park: o/p"
+echo "Seatbelt: k/l"
+echo "Turnsignal: RIGHT/LEFT"
 
-./AC $interface & ./Battery $interface & ./Brake $interface & ./Cardoor $interface & ./Dashboard $interface & ./park $interface & ./seatbelt $interface & ./turnsignal $interface
+./AC $interface & ./Battery $interface & ./Brake $interface & ./Cardoor $interface & ./Dashboard $interface & ./Park $interface & ./Seatbelt $interface & ./Turnsignal $interface

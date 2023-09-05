@@ -18,7 +18,7 @@
 #define DATA_DIR "./data/"
 #endif
 
-#define DEFAULT_brake_ID 600
+#define DEFAULT_park_ID 900
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 
@@ -26,10 +26,10 @@ int s; // socket
 struct canfd_frame cf;
 struct ifreq ifr;
 
-int brake_pos = 0;
-int brake_len = 1;
-char brake_state = 1;
-int brake_id = DEFAULT_brake_ID;
+int park_pos = 0;
+int park_len = 1;
+char park_state = 1;
+int park_id = DEFAULT_park_ID;
 
 char data_file[256];
 
@@ -49,19 +49,16 @@ void send_pkt(int mtu) {
     }
 }
 
-void send_brake_state(char c) {
-    if(c == 'i') {
-        brake_state = 0;
-    } else if(c == 'u') {
-        brake_state = 1;
-    } else if(c == 'j') {
-        brake_state = 2;
-    }
-
+void send_park_state(bool b) {
+    if(b)
+        park_state = 1;
+    else
+        park_state = 0;
+    
     memset(&cf, 0, sizeof(cf));
-    cf.can_id = brake_id;
-    cf.len = brake_len;
-    cf.data[brake_pos] = brake_state;
+    cf.can_id = park_id;
+    cf.len = park_len;
+    cf.data[park_pos] = park_state;
     send_pkt(CAN_MTU);
 }
 
@@ -69,7 +66,6 @@ void redraw_screen() {
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 }
-
 
 int main(int argc, char *argv[]) {
     struct sockaddr_can addr;
@@ -107,12 +103,12 @@ int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
 
-    window = SDL_CreateWindow("Brake", 310, 320, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Park", 620, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }
     renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Surface *image = IMG_Load(get_data("b.png"));
+    SDL_Surface *image = IMG_Load(get_data("p.png"));
     base_texture = SDL_CreateTextureFromSurface(renderer, image);
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -132,18 +128,13 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-                case SDLK_u:
-                    send_brake_state('u');
+                case SDLK_o:
+                    send_park_state(1);
                     break;
-                case SDLK_i:
-                    send_brake_state('i');
-                    break;
-                case SDLK_j:
-                    send_brake_state('j');
+                case SDLK_p:
+                    send_park_state(0);
                     break;
                 }
-
-
             }
         }
         SDL_Delay(5);

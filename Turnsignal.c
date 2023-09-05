@@ -18,7 +18,12 @@
 #define DATA_DIR "./data/"
 #endif
 
-#define DEFAULT_brake_ID 600
+#define DEFAULT_SIGNAL_ID 392
+#define DEFAULT_SIGNAL_POS 0
+#define CAN_LEFT_SIGNAL 1
+#define CAN_RIGHT_SIGNAL 2
+#define ON 1
+#define OFF 0
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 
@@ -26,11 +31,16 @@ int s; // socket
 struct canfd_frame cf;
 struct ifreq ifr;
 
-int brake_pos = 0;
-int brake_len = 1;
-char brake_state = 1;
-int brake_id = DEFAULT_brake_ID;
+int signal_pos = DEFAULT_SIGNAL_POS;
+int signal_len = 3;
+char signal_state = 0;
 
+int turning = 0;
+int signal_id = DEFAULT_SIGNAL_ID;
+int currentTime;
+int lastTurnSignal = 0;
+
+int kk = 0;
 char data_file[256];
 
 SDL_Renderer *renderer = NULL;
@@ -49,27 +59,61 @@ void send_pkt(int mtu) {
     }
 }
 
-void send_brake_state(char c) {
-    if(c == 'i') {
-        brake_state = 0;
-    } else if(c == 'u') {
-        brake_state = 1;
-    } else if(c == 'j') {
-        brake_state = 2;
-    }
-
+void send_turn_signal() {
     memset(&cf, 0, sizeof(cf));
-    cf.can_id = brake_id;
-    cf.len = brake_len;
-    cf.data[brake_pos] = brake_state;
+    cf.can_id = signal_id;
+    cf.len = signal_len;
+    cf.data[signal_pos] = signal_state;
     send_pkt(CAN_MTU);
+}
+
+void checkTurn() {
+    if(currentTime > lastTurnSignal + 500) {
+        if(turning < 0) {
+            signal_state ^= CAN_LEFT_SIGNAL;
+        } else if(turning > 0) {
+            signal_state ^= CAN_RIGHT_SIGNAL;
+        } else {
+            signal_state = 0;
+        }
+        send_turn_signal();
+        lastTurnSignal = currentTime;
+    }
+}
+
+void kk_check(int k) {
+    switch(k) {
+    case SDLK_RETURN:
+        if(kk == 0xa) printf("KK\n");
+        kk = 0;
+        break;
+    case SDLK_UP:
+        kk = (kk < 2) ? kk+1 : 0;
+        break;
+    case SDLK_DOWN:
+        kk = (kk > 1 && kk < 4) ? kk+1 : 0;
+        break;
+    case SDLK_LEFT:
+        kk = (kk == 4 || kk == 6) ? kk+1 : 0;
+        break;
+    case SDLK_RIGHT:
+        kk = (kk == 5 || kk == 7) ? kk+1 : 0;
+        break;
+    case SDLK_a:
+        kk = kk == 9 ? kk+1 : 0;
+        break;
+    case SDLK_b:
+        kk = kk == 8 ? kk+1 : 0;
+        break;
+    default:
+        kk == 0;
+    }
 }
 
 void redraw_screen() {
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 }
-
 
 int main(int argc, char *argv[]) {
     struct sockaddr_can addr;
@@ -107,12 +151,12 @@ int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
 
-    window = SDL_CreateWindow("Brake", 310, 320, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Turnsignal", 0, 320, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }
     renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Surface *image = IMG_Load(get_data("b.png"));
+    SDL_Surface *image = IMG_Load(get_data("Turn-Signals.png"));
     base_texture = SDL_CreateTextureFromSurface(renderer, image);
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -132,22 +176,36 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-                case SDLK_u:
-                    send_brake_state('u');
-                    break;
-                case SDLK_i:
-                    send_brake_state('i');
-                    break;
-                case SDLK_j:
-                    send_brake_state('j');
-                    break;
-                }
 
+                case SDLK_LEFT:
+                    turning = -1;
+                    break;
+                case SDLK_RIGHT:
+                    turning = 1;
+                    break;
+
+                }
+                kk_check(event.key.keysym.sym);
+                break;
+            case SDL_KEYUP:
+                switch(event.key.keysym.sym) {
+
+                case SDLK_LEFT:
+                case SDLK_RIGHT:
+                    turning = 0;
+                    break;
+
+                }
+                break;
 
             }
         }
+        currentTime = SDL_GetTicks();
+
+        checkTurn();
         SDL_Delay(5);
     }
+
     close(s);
     SDL_DestroyTexture(base_texture);
     SDL_FreeSurface(image);
