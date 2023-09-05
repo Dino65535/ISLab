@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
@@ -13,12 +12,13 @@
 #include <linux/can/raw.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <stdbool.h>
 
 #ifndef DATA_DIR
 #define DATA_DIR "./data/"
 #endif
 
-#define DEFAULT_AC_ID 800//800
+#define DEFAULT_brake_ID 600
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 
@@ -26,10 +26,10 @@ int s; // socket
 struct canfd_frame cf;
 struct ifreq ifr;
 
-int AC_pos = 0;
-int AC_len = 1;
-char AC_state = 1;
-int AC_id = DEFAULT_AC_ID;
+int brake_pos = 0;
+int brake_len = 1;
+char brake_state = 1;
+int brake_id = DEFAULT_brake_ID;
 
 char data_file[256];
 
@@ -49,16 +49,19 @@ void send_pkt(int mtu) {
     }
 }
 
-void send_AC_state(bool b) {
-    if(b)
-        AC_state = 1; //open
-    else
-        AC_state = 0; //close
+void send_brake_state(char c) {
+    if(c == 'i') {
+        brake_state = 0;
+    } else if(c == 'u') {
+        brake_state = 1;
+    } else if(c == 'j') {
+        brake_state = 2;
+    }
 
     memset(&cf, 0, sizeof(cf));
-    cf.can_id = AC_id;
-    cf.len = AC_len;
-    cf.data[AC_pos] = AC_state;
+    cf.can_id = brake_id;
+    cf.len = brake_len;
+    cf.data[brake_pos] = brake_state;
     send_pkt(CAN_MTU);
 }
 
@@ -104,12 +107,12 @@ int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
 
-    window = SDL_CreateWindow("AC", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("brake", 301, 300, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }
     renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Surface *image = IMG_Load(get_data("acbg.png"));
+    SDL_Surface *image = IMG_Load(get_data("b.png"));
     base_texture = SDL_CreateTextureFromSurface(renderer, image);
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -129,15 +132,18 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-
-                case SDLK_e:
-                    send_AC_state(1);
+                case SDLK_u:
+                    send_brake_state('u');
                     break;
-                case SDLK_r:
-                    send_AC_state(0);
+                case SDLK_i:
+                    send_brake_state('i');
                     break;
-
+                case SDLK_j:
+                    send_brake_state('j');
+                    break;
                 }
+
+
             }
         }
         SDL_Delay(5);

@@ -477,11 +477,10 @@ void update_AC_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < AC_pos) return;
     if(cf->data[AC_pos]& CAN_LEFT_SIGNAL) {
-        ac=1;
-        
+        ac = 2;      
     } 
     else{
-        ac=2;
+        ac = 1;
     }
     update_AC();
     SDL_RenderPresent(renderer);

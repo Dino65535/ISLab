@@ -1,10 +1,3 @@
-/*
- * Control panel for IC Simulation
- *
- * OpenGarages 
- *
- * craig@theialabs.com
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -28,129 +21,64 @@
 #ifndef DATA_DIR
 #define DATA_DIR "./data/"
 #endif
-#define DEFAULT_CAN_TRAFFIC DATA_DIR "sample-can.log"
 
-#define DEFAULT_DIFFICULTY 1
-// 0 = No randomization added to the packets other than location and ID
-// 1 = Add NULL padding
-// 2 = Randomize unused bytes
 #define DEFAULT_battery_ID 700
-#define ON 1
-#define OFF 0
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
-#define MAX_SPEED 240.0 // Limiter 260.0 is full guage speed
-#define ACCEL_RATE 8.0 // 0-MAX_SPEED in seconds
-
-
-// For now, specific models will be done as constants.  Later
-// We should use a config file
-#define MODEL_BMW_X1_SPEED_ID 0x1B4
-#define MODEL_BMW_X1_SPEED_BYTE 0
-#define MODEL_BMW_X1_RPM_ID 0x0AA
-#define MODEL_BMW_X1_RPM_BYTE 4
-#define MODEL_BMW_X1_HANDBRAKE_ID 0x1B4  // Not implemented yet
-#define MODEL_BMW_X1_HANDBRAKE_BYTE 5
 
 #define BUF_SIZE 1024
 #define SERVER_IP "127.0.0.1"
 #define UDP_PORT 15120
 
-// Acelleromoter axis info
-
-
-//Analog joystick dead zone
-
-int gLastAccelValue = 0; // Non analog R2
 
 int s; // socket
 struct canfd_frame cf;
-char *traffic_log = DEFAULT_CAN_TRAFFIC;
 struct ifreq ifr;
 
 int battery_pos = 0;
-
 int battery_len = 1;
-
-int difficulty = DEFAULT_DIFFICULTY;
-char *model = NULL;
-
-
 char battery_state = 1;
+int battery_id = DEFAULT_battery_ID;
 
-float current_speed = 0;
-int turning = 0;
-int battery_id;
-int currentTime;
-
-int seed = 0;
-int debug = 0;
-
-int play_id;
-int kk = 0;
 char data_file[256];
-SDL_GameController *gGameController = NULL;
 
-SDL_Haptic *gHaptic = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Texture *base_texture = NULL;
-
-
 
 int socket_fd, TCP_PORT;
 struct sockaddr_in server_addr;
 char buffer[BUF_SIZE];
 cJSON *session_ID_header;
 
-void kk_check(int);
 
-// Adds data dir to file name
-// Uses a single pointer so not to have a memory leak
-// returns point to data_files or NULL if append is too large
 char *get_data(char *fname) {
-  if(strlen(DATA_DIR) + strlen(fname) > 255) return NULL;
-  strncpy(data_file, DATA_DIR, 255);
-  strncat(data_file, fname, 255-strlen(data_file));
-  return data_file;
+    if(strlen(DATA_DIR) + strlen(fname) > 255) return NULL;
+    strncpy(data_file, DATA_DIR, 255);
+    strncat(data_file, fname, 255-strlen(data_file));
+    return data_file;
 }
-
 
 void send_pkt(int mtu) {
-  if(write(s, &cf, mtu) != mtu) {
-	perror("write");
-  }
+    if(write(s, &cf, mtu) != mtu) {
+        perror("write");
+    }
 }
 
-// Randomizes bytes in CAN packet if difficulty is hard enough
-void randomize_pkt(int start, int stop) {
-	if (difficulty < 2) return;
-	int i = start;
-	for(;i < stop;i++) {
-		if(rand() % 3 < 1) cf.data[i] = rand() % 255;
-	}
+void send_battery_state(bool b) {
+    if(b) {
+        battery_state = 1;
+    } else {
+        battery_state = 0;
+    }
+    memset(&cf, 0, sizeof(cf));
+    cf.can_id = battery_id;
+    cf.len = battery_len;
+    cf.data[battery_pos] = battery_state;
+    send_pkt(CAN_MTU);
 }
-
-
-void send_battery_state(char b){
-	battery_state |= b;
-   	memset(&cf, 0, sizeof(cf));
-	cf.can_id = battery_id;
-	cf.len = battery_len;
-	cf.data[battery_pos] = battery_state;
-	send_pkt(CAN_MTU);
-}
-void send_battery_state1(char b){
-	battery_state &= b;
-   	memset(&cf, 0, sizeof(cf));
-	cf.can_id = battery_id;
-	cf.len = battery_len;
-	cf.data[battery_pos] = battery_state;
-	send_pkt(CAN_MTU);
-}
-
 //----------------------------
-void Create_UDP(){
-    if((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0){
+void Create_UDP() {
+    if((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("無法建立UDP Socket");
         exit(1);
     }
@@ -161,8 +89,8 @@ void Create_UDP(){
     server_addr.sin_port = htons(UDP_PORT);
 }
 
-void Create_TCP(){
-    if((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+void Create_TCP() {
+    if((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("無法建立TCP Socket");
         exit(1);
     }
@@ -174,17 +102,16 @@ void Create_TCP(){
 
     sleep(1);
 
-    if(connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+    if(connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("無法連結到TCP server");
         exit(1);
-    }
-    else{
+    } else {
         printf("TCP建立成功\n");
         printf("--------------------\n");
     }
 }
 
-void TCP_Send_Message(cJSON *packet){
+void TCP_Send_Message(cJSON *packet) {
     char *json_str = cJSON_Print(packet);
 
     printf("TCP傳送 :%s\n", json_str);
@@ -194,12 +121,12 @@ void TCP_Send_Message(cJSON *packet){
     free(json_str);
 }
 
-void TCP_Read_Message(){
+void TCP_Read_Message() {
     memset(buffer, 0, sizeof(buffer));
     read(socket_fd, buffer, BUF_SIZE);
 
     cJSON *response = cJSON_Parse(buffer);
-    if(response == NULL){
+    if(response == NULL) {
         perror("JSON解析失敗");
         exit(4);
     }
@@ -212,7 +139,7 @@ void TCP_Read_Message(){
     cJSON_Delete(response);
 }
 
-void Init_Stage(){
+void Init_Stage() {
     printf("Init_Stage :\n");
 
     cJSON *SDP = cJSON_CreateObject(), *Header = cJSON_CreateObject();
@@ -224,20 +151,20 @@ void Init_Stage(){
 
     char *json_str = cJSON_Print(SDP);
 
-    if(sendto(socket_fd, json_str, strlen(json_str), 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
+    if(sendto(socket_fd, json_str, strlen(json_str), 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         perror("UPD傳送訊息失敗");
         exit(2);
     }
 
     socklen_t serverLen = sizeof(server_addr);
     memset(buffer, 0, sizeof(buffer));
-    if(recvfrom(socket_fd, buffer, BUF_SIZE, 0, (struct sockaddr*)&server_addr, &serverLen) < 0){
+    if(recvfrom(socket_fd, buffer, BUF_SIZE, 0, (struct sockaddr*)&server_addr, &serverLen) < 0) {
         perror("UPD接收訊息失敗");
         exit(3);
     }
 
     cJSON *response = cJSON_Parse(buffer);
-    if (response == NULL){
+    if (response == NULL) {
         perror("SDP JSON解析失敗");
         exit(4);
     }
@@ -257,7 +184,7 @@ void Init_Stage(){
     printf("--------------------\n");
 }
 
-void Supported_App_Protocol_Stage(){
+void Supported_App_Protocol_Stage() {
     printf("Supported_App_Protocol_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -276,10 +203,10 @@ void Supported_App_Protocol_Stage(){
     cJSON_AddNumberToObject(AppProtocol, "Priority", 1);
 
     TCP_Send_Message(packet);
-    TCP_Read_Message(); 
+    TCP_Read_Message();
 }
 
-void Session_Setup_Stage(){
+void Session_Setup_Stage() {
     printf("Session_Setup_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -308,7 +235,7 @@ void Session_Setup_Stage(){
     read(socket_fd, buffer, BUF_SIZE);
 
     cJSON *response = cJSON_Parse(buffer);
-    if(response == NULL){
+    if(response == NULL) {
         perror("JSON解析失敗");
         exit(4);
     }
@@ -321,10 +248,10 @@ void Session_Setup_Stage(){
     cJSON_AddStringToObject(session_ID_header, "SessionID", session_ID);
 
     free(json_str);
-    cJSON_Delete(response);   
+    cJSON_Delete(response);
 }
 
-void Service_Discovery_Stage(){
+void Service_Discovery_Stage() {
     printf("Service_Discovery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -339,10 +266,10 @@ void Service_Discovery_Stage(){
     cJSON_AddItemToObject(Body, "ServiceDiscoveryReq", ServiceDiscoveryReq);
 
     TCP_Send_Message(packet);
-    TCP_Read_Message(); 
+    TCP_Read_Message();
 }
 
-void Payment_Service_Selection_Stage(){
+void Payment_Service_Selection_Stage() {
     printf("Payment_Service_Selection_Stag :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -364,12 +291,12 @@ void Payment_Service_Selection_Stage(){
     cJSON_AddItemToObject(SelectedServiceList, "SelectedService", SelectedService);
     cJSON_AddItemToArray(SelectedService, serviceID);
     cJSON_AddNumberToObject(serviceID, "ServiceID", 1);
-   
+
     TCP_Send_Message(packet);
-    TCP_Read_Message(); 
+    TCP_Read_Message();
 }
 
-void Authorization_Stage(){
+void Authorization_Stage() {
     printf("Authorization_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -384,10 +311,10 @@ void Authorization_Stage(){
     cJSON_AddItemToObject(Body, "AuthorizationReq", AuthorizationReq);
 
     TCP_Send_Message(packet);
-    TCP_Read_Message();  
+    TCP_Read_Message();
 }
 
-void Charge_Parameter_Discovery_Stage(){
+void Charge_Parameter_Discovery_Stage() {
     printf("Charge_Parameter_Discovery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -433,10 +360,10 @@ void Charge_Parameter_Discovery_Stage(){
     cJSON_AddStringToObject(EVMinCurrent, "Unit", "A");
 
     TCP_Send_Message(packet);
-    TCP_Read_Message();  
+    TCP_Read_Message();
 }
 
-void Power_Delivery_Stage(bool b){
+void Power_Delivery_Stage(bool b) {
     printf("Power_Delivery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -452,7 +379,7 @@ void Power_Delivery_Stage(bool b){
 
     cJSON_AddItemToObject(Body, "PowerDeliveryReq", PowerDeliveryReq);
 
-    if(b){
+    if(b) {
         cJSON_AddStringToObject(PowerDeliveryReq, "ChargeProgress", "Start");
         cJSON_AddNumberToObject(PowerDeliveryReq, "SAScheduleTupleID", 1);
 
@@ -488,17 +415,16 @@ void Power_Delivery_Stage(bool b){
         cJSON_AddNumberToObject(ChargingProfileEntryMaxPower3, "Multiplier", 0);
         cJSON_AddStringToObject(ChargingProfileEntryMaxPower3, "Unit", "W");
         cJSON_AddItemToArray(ProfileEntry, temp3);
-    }
-    else{
+    } else {
         cJSON_AddStringToObject(PowerDeliveryReq, "ChargeProgress", "Stop");
         cJSON_AddNumberToObject(PowerDeliveryReq, "SAScheduleTupleID", 1);
     }
 
     TCP_Send_Message(packet);
-    TCP_Read_Message();  
+    TCP_Read_Message();
 }
 
-void Charging_State(){
+void Charging_State() {
     printf("Charging_State :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -513,10 +439,10 @@ void Charging_State(){
     cJSON_AddItemToObject(Body, "ChargingStatusReq", ChargingStatusReq);
 
     TCP_Send_Message(packet);
-    TCP_Read_Message();  
+    TCP_Read_Message();
 }
 
-void Session_and_TCP_Server_Stop_Stage(){
+void Session_and_TCP_Server_Stop_Stage() {
     printf("Session_and_TCP_Server_Stop_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
@@ -532,22 +458,21 @@ void Session_and_TCP_Server_Stop_Stage(){
     cJSON_AddStringToObject(SessionStopReq, "ChargingSession", "Terminate");
 
     TCP_Send_Message(packet);
-    TCP_Read_Message(); 
+    TCP_Read_Message();
 
     if (close(socket_fd) < 0) {
         perror("伺服器關閉失敗");
-    }
-    else{
+    } else {
         perror("TCP關閉");
     }
 }
 
-void communicate_with_charging_pile(){
+void communicate_with_charging_pile() {
     session_ID_header = cJSON_CreateObject();
 
     Create_UDP();
     Init_Stage();
-    
+
     Create_TCP();
 
     Supported_App_Protocol_Stage();
@@ -567,207 +492,105 @@ void communicate_with_charging_pile(){
 
     Charge_Parameter_Discovery_Stage();
     sleep(1);
-    
+
     Power_Delivery_Stage(true); //true >> ChargeProgress : Start
     sleep(1);
 
-    for(int i = 0; i<5; i++){ //假設傳送5次就充滿電了
+    for(int i = 0; i<5; i++) { //假設傳送5次就充滿電了
         Charging_State();
         sleep(1);
     }
-    
+
     Power_Delivery_Stage(false); //false >> ChargeProgress : Stop
     sleep(1);
 
     Session_and_TCP_Server_Stop_Stage();
 }
 //----------------------------
-
-
-
-
-
-
-
-
-
-// Plays background can traffic
-void play_can_traffic() {
-	char can2can[50];
-	snprintf(can2can, 49, "%s=can0", ifr.ifr_name);
-	if(execlp("canplayer", "canplayer", "-I", traffic_log, "-l", "i", can2can, NULL) == -1) printf("WARNING: Could not execute canplayer. No bg data\n");
-}
-
-void kill_child() {
-	kill(play_id, SIGINT);
-}
-
 void redraw_screen() {
-  SDL_RenderCopy(renderer, base_texture, NULL, NULL);
-  SDL_RenderPresent(renderer);
-}
-
-// Maps the controllers buttons
-
-
-
-void usage(char *msg) {
-  if(msg) printf("%s\n", msg);
-  printf("Usage: controls [options] <can>\n");
-  printf("\t-s\tseed value from IC\n");
-  printf("\t-l\tdifficulty level. 0-2 (default: %d)\n", DEFAULT_DIFFICULTY);
-  printf("\t-t\ttraffic file to use for bg CAN traffic\n");
-  printf("\t-m\tModel (Ex: -m bmw)\n");
-  printf("\t-X\tDisable background CAN traffic.  Cheating if doing RE but needed if playing on a real CANbus\n");
-  printf("\t-d\tdebug mode\n");
-  exit(1);
+    SDL_RenderCopy(renderer, base_texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char *argv[]) {
-  int opt;
-  struct sockaddr_can addr;
-  struct canfd_frame frame;
-  int running = 1;
-  int enable_canfd = 1;
-  int play_traffic = 1;
-  struct stat st;
-  
-  SDL_Event event;
+    struct sockaddr_can addr;
+    int running = 1;
+    int enable_canfd = 1;
+    SDL_Event event;
 
-  while ((opt = getopt(argc, argv, "Xdl:s:t:m:h?")) != -1) {
-    switch(opt) {
-	case 'l':
-		difficulty = atoi(optarg);
-		break;
-	case 's':
-		seed = atoi(optarg);
-		break;
-	case 't':
-		traffic_log = optarg;
-		break;
-	case 'd':
-		debug = 1;
-		break;
-	case 'm':
-		model = optarg;
-		break;
-	case 'X':
-		play_traffic = 0;
-		break;
-	case 'h':
-	case '?':
-	default:
-		usage(NULL);
-		break;
+    /* open socket */
+    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+        perror("socket");
+        return 1;
     }
-  }
 
-  if (optind >= argc) usage("You must specify at least one can device");
+    addr.can_family = AF_CAN;
 
-  if(stat(traffic_log, &st) == -1) {
-	char msg[256];
-	snprintf(msg, 255, "CAN Traffic file not found: %s\n", traffic_log);
-	usage(msg);
-  }
+    strcpy(ifr.ifr_name, argv[optind]);
+    if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+        perror("SIOCGIFINDEX");
+        return 1;
+    }
+    addr.can_ifindex = ifr.ifr_ifindex;
 
-  /* open socket */
-  if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-       perror("socket");
-       return 1;
-  }
+    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
+                   &enable_canfd, sizeof(enable_canfd))) {
+        printf("error when enabling CAN FD support\n");
+        return 1;
+    }
 
-  addr.can_family = AF_CAN;
+    if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        perror("bind");
+        return 1;
+    }
 
-  strcpy(ifr.ifr_name, argv[optind]);
-  if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-       perror("SIOCGIFINDEX");
-       return 1;
-  }
-  addr.can_ifindex = ifr.ifr_ifindex;
+    // GUI Setup
+    SDL_Window *window = NULL;
+    SDL_Surface *screenSurface = NULL;
 
-  if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
-                 &enable_canfd, sizeof(enable_canfd))){
-       printf("error when enabling CAN FD support\n");
-       return 1;
-  }
-
-  if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-       perror("bind");
-       return 1;
-  }
-
-
-  battery_id= DEFAULT_battery_ID;
-  
-  
-
-  if(play_traffic) {
-	play_id = fork();
-	if((int)play_id == -1) {
-		printf("Error: Couldn't fork bg player\n");
-		exit(-1);
-	} else if (play_id == 0) {
-		play_can_traffic();
-		// Shouldn't return
-		exit(0);
-	}
-	atexit(kill_child);
-  }
-
-  // GUI Setup
-  SDL_Window *window = NULL;
-  SDL_Surface *screenSurface = NULL;
-  
-  window = SDL_CreateWindow("battery", 301, 600, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-  if(window == NULL) {
+    window = SDL_CreateWindow("battery", 301, 600, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    if(window == NULL) {
         printf("Window could not be shown\n");
-  }
-  renderer = SDL_CreateRenderer(window, -1, 0);
-  SDL_Surface *image = IMG_Load(get_data("battery.png"));
-  base_texture = SDL_CreateTextureFromSurface(renderer, image);
-  SDL_RenderCopy(renderer, base_texture, NULL, NULL);
-  SDL_RenderPresent(renderer);
-  int button, axis; // Used for checking dynamic joystick mappings
+    }
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Surface *image = IMG_Load(get_data("battery.png"));
+    base_texture = SDL_CreateTextureFromSurface(renderer, image);
+    SDL_RenderCopy(renderer, base_texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
 
-  while(running) {
-    while( SDL_PollEvent(&event) != 0 ) {
-        switch(event.type) {
+    while(running) {
+        while( SDL_PollEvent(&event) != 0 ) {
+            switch(event.type) {
             case SDL_QUIT:
                 running = 0;
                 break;
-	    case SDL_WINDOWEVENT:
-		switch(event.window.event) {
-		case SDL_WINDOWEVENT_ENTER:
-		case SDL_WINDOWEVENT_RESIZED:
-			redraw_screen();
-			break;
-		}
-	    case SDL_KEYDOWN:
-		switch(event.key.keysym.sym) {
-		    
-			case SDLK_q:
-                send_battery_state(1);
-                break;
-            case SDLK_w:
-                send_battery_state1(0);
-                break;
-            case SDLK_b:
-            	communicate_with_charging_pile();
-            	break;
-        	
-		}
+            case SDL_WINDOWEVENT:
+                switch(event.window.event) {
+                case SDL_WINDOWEVENT_ENTER:
+                case SDL_WINDOWEVENT_RESIZED:
+                    redraw_screen();
+                    break;
+                }
+            case SDL_KEYDOWN:
+                switch(event.key.keysym.sym) {
+                case SDLK_q:
+                    send_battery_state(1);
+                    break;
+                case SDLK_w:
+                    send_battery_state(0);
+                    break;
+                case SDLK_b:
+                    communicate_with_charging_pile();
+                    break;
+                }
+            }
         }
+        SDL_Delay(5);
     }
-    currentTime = SDL_GetTicks();
-    SDL_Delay(5);
-  }
-
-  close(s);
-  SDL_DestroyTexture(base_texture);
-  SDL_FreeSurface(image);
-  SDL_GameControllerClose(gGameController);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
-
+    close(s);
+    SDL_DestroyTexture(base_texture);
+    SDL_FreeSurface(image);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }

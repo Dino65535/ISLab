@@ -9,13 +9,13 @@ fi
 interface=$1
 
 echo "按鍵"
-echo "AC: e/r"
+echo "AC: e : open /r : close"
 echo "Battery: q/w"
-echo "brake: u/i/j"
-echo "cardoor: L_shift/R_shift + a/b/x/y"
+echo "Brake: u/i/j"
+echo "Cardoor: L_shift/R_shift + a/b/x/y"
 echo "Dashboard: UP/DOWN"
 echo "park: o/p"
 echo "seatbelt: k/l"
 echo "turnsignal: RIGHT/LEFT"
 
-./AC $interface & ./Battery $interface & ./brake $interface & ./cardoor $interface & ./Dashboard $interface & ./park $interface & ./seatbelt $interface & ./turnsignal $interface
+./AC $interface & ./Battery $interface & ./Brake $interface & ./Cardoor $interface & ./Dashboard $interface & ./park $interface & ./seatbelt $interface & ./turnsignal $interface
