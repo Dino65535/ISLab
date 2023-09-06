@@ -18,7 +18,7 @@
 #define DATA_DIR "./img/"
 #endif
 
-#define DEFAULT_AC_ID 800//800
+#define DEFAULT_AC_ID 800
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 
@@ -130,10 +130,10 @@ int main(int argc, char *argv[]) {
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
 
-                case SDLK_e:
+                case SDLK_u:
                     send_AC_state(1);
                     break;
-                case SDLK_r:
+                case SDLK_i:
                     send_AC_state(0);
                     break;
 

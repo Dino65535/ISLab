@@ -50,11 +50,11 @@ void send_pkt(int mtu) {
 }
 
 void send_brake_state(char c) {
-    if(c == 'i') {
+    if(c == 'q') {
         brake_state = 0;
-    } else if(c == 'u') {
+    } else if(c == 'w') {
         brake_state = 1;
-    } else if(c == 'j') {
+    } else if(c == 'e') {
         brake_state = 2;
     }
 
@@ -132,14 +132,14 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-                case SDLK_u:
-                    send_brake_state('u');
+                case SDLK_w:
+                    send_brake_state('w');
                     break;
-                case SDLK_i:
-                    send_brake_state('i');
+                case SDLK_e:
+                    send_brake_state('e');
                     break;
-                case SDLK_j:
-                    send_brake_state('j');
+                case SDLK_q:
+                    send_brake_state('q');
                     break;
                 }
 

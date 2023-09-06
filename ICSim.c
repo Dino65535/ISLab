@@ -51,7 +51,7 @@ int debug = 0;
 int ac=0;
 int word=0;
 int battery=0;
-int save=0;
+int seatbelt=0;
 int Brake=0;
 int Park=0;
 int randomize = 0;
@@ -67,7 +67,6 @@ int park_pos = DEFAULT_BYTE;
 long current_speed = 0;
 int door_status[4];
 int turn_status[2];
-char *model = NULL;
 char data_file[256];
 SDL_Renderer *renderer = NULL;
 SDL_Texture *base_texture = NULL;
@@ -171,52 +170,45 @@ void update_speed() {
 }
 
 void update_AC() {
-    if(ac==0)
-        SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
-    if(ac==1) {
+    if(ac == 0) {
         SDL_RenderFillRect(renderer, &AC_dis);
         SDL_RenderCopy(renderer, AC_tex, NULL, &AC_dis);
-    } else if(ac==2) {
+    } else if(ac == 1) {
         SDL_RenderFillRect(renderer, &AC_dis);
         SDL_RenderCopy(renderer, AC_tex1, NULL, &AC_dis);
     }
 }
 
 void update_brake() {
-    if(Brake==0)
-        SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
-    if(Brake==1) {
+    if(Brake == 0) { //close
         SDL_RenderFillRect(renderer, &brake_dis);
-        SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
-    } else if(Brake==2) {
+    } else if(Brake == 1) { //yellow
         SDL_RenderFillRect(renderer, &brake_dis);
         SDL_RenderCopy(renderer, brake_tex1, NULL, &brake_dis);
-    } else if(Brake==3) {
+    } else if(Brake == 2) { //red
         SDL_RenderFillRect(renderer, &brake_dis);
+        SDL_RenderCopy(renderer, brake_tex, NULL, &brake_dis);
     }
 }
 
-void update_save() {
-    if(save==0)
-        SDL_RenderCopy(renderer, save_tex, NULL, &save_dis);
-    if(save==1) {
+void update_seatbelt() {
+    if(seatbelt == 0)
+        SDL_RenderFillRect(renderer, &save_dis);
+    if(seatbelt == 1) {
         SDL_RenderFillRect(renderer, &save_dis);
         SDL_RenderCopy(renderer, save_tex, NULL, &save_dis);
-    } else if(save==2) {
-        SDL_RenderFillRect(renderer, &save_dis);
-        SDL_RenderCopy(renderer, save_tex1, NULL, &save_dis);
     }
 }
 
 void update_park() {
-    if(Park==0)
-        SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
-    if(Park==1) {
+    if(Park == 0) {
         SDL_RenderFillRect(renderer, &park_dis);
-        SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
-    } else if(Park==2) {
+    } else if(Park == 1) {
         SDL_RenderFillRect(renderer, &park_dis);
         SDL_RenderCopy(renderer, park_tex1, NULL, &park_dis);
+    } else if(Park == 2) {
+        SDL_RenderFillRect(renderer, &park_dis);
+        SDL_RenderCopy(renderer, park_tex, NULL, &park_dis);
     }
 }
 
@@ -364,7 +356,7 @@ void redraw_ic() {
     update_AC();
     update_battery();
     update_brake();
-    update_save();
+    update_seatbelt();
     update_park();
 
     SDL_RenderPresent(renderer);
@@ -373,15 +365,9 @@ void redraw_ic() {
 void update_brake_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < brake_pos) return;
-    if(cf->data[brake_pos]& CAN_LEFT_SIGNAL) {
-        Brake = 1;
 
-    } else {
-        Brake = 2;
-    }
-    if(cf->data[brake_pos] & CAN_RIGHT_SIGNAL) {
-        Brake = 3;
-    }
+    Brake = cf->data[brake_pos];
+
     update_brake();
     SDL_RenderPresent(renderer);
 }
@@ -389,12 +375,9 @@ void update_brake_state(struct canfd_frame *cf, int maxdlen) {
 void update_park_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < park_pos) return;
-    if(cf->data[park_pos]& CAN_LEFT_SIGNAL) {
-        Park = 1;
 
-    } else {
-        Park = 2;
-    }
+    Park = cf->data[park_pos];
+
     update_park();
     SDL_RenderPresent(renderer);
 }
@@ -402,24 +385,20 @@ void update_park_state(struct canfd_frame *cf, int maxdlen) {
 void update_AC_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < AC_pos) return;
-    if(cf->data[AC_pos]& CAN_LEFT_SIGNAL) {
-        ac = 2;
-    } else {
-        ac = 1;
-    }
+
+    ac = cf->data[AC_pos];
+
     update_AC();
     SDL_RenderPresent(renderer);
 }
 
-void update_save_state(struct canfd_frame *cf, int maxdlen) {
+void update_seatbelt_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < save_pos) return;
-    if(cf->data[save_pos]& CAN_LEFT_SIGNAL) {
-        save = 1;
-    } else {
-        save = 2;
-    }
-    update_save();
+
+    seatbelt = cf->data[save_pos];
+
+    update_seatbelt();
     SDL_RenderPresent(renderer);
 }
 
@@ -440,16 +419,12 @@ void update_battery_state(struct canfd_frame *cf, int maxdlen) {
 void update_speed_status(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < speed_pos + 1) return;
-    if (model) {
-        if (!strncmp(model, "bmw", 3)) {
-            current_speed = (((cf->data[speed_pos + 1] - 208) * 256) + cf->data[speed_pos]) / 16;
-        }
-    } else {
-        int speed = cf->data[speed_pos] << 8;
-        speed += cf->data[speed_pos + 1];
-        speed = speed / 100; // speed in kilometers
-        current_speed = speed * 0.6213751; // mph
-    }
+
+    int speed = cf->data[speed_pos] << 8;
+    speed += cf->data[speed_pos + 1];
+    speed = speed / 100; // speed in kilometers
+    current_speed = speed * 0.6213751; // mph
+
     update_speed();
     SDL_RenderPresent(renderer);
 }
@@ -654,7 +629,7 @@ int main(int argc, char *argv[]) {
     park_tex = SDL_CreateTextureFromSurface(renderer, park);
     SDL_Surface *park1 = IMG_Load(get_data("park1.png"));
     park_tex1 = SDL_CreateTextureFromSurface(renderer, park1);
-    SDL_Surface *save = IMG_Load(get_data("save.png"));
+    SDL_Surface *save = IMG_Load(get_data("save.png")); //change name
     save_tex = SDL_CreateTextureFromSurface(renderer, save);
     SDL_Surface *save1 = IMG_Load(get_data("save1.png"));
     save_tex1 = SDL_CreateTextureFromSurface(renderer, save1);
@@ -720,7 +695,7 @@ int main(int argc, char *argv[]) {
         if(frame.can_id == battery_id) update_battery_state(&frame, maxdlen);
         if(frame.can_id == brake_id) update_brake_state(&frame, maxdlen);
         if(frame.can_id == park_id) update_park_state(&frame, maxdlen);
-        if(frame.can_id == save_id) update_save_state(&frame, maxdlen);
+        if(frame.can_id == save_id) update_seatbelt_state(&frame, maxdlen);
 
         if(frame.can_id == 199){
             SDL_LockSurface(needle);

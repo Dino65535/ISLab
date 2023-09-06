@@ -128,14 +128,13 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-
-                case SDLK_k:
-                    send_save_state(1);
-                    break;
-                case SDLK_l:
+                case SDLK_f:
                     send_save_state(0);
                     break;
-                case SDLK_a:
+                case SDLK_g:
+                    send_save_state(1);
+                    break;
+                case SDLK_h:
                     system("./test");
                     break;
 

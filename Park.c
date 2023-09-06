@@ -49,11 +49,13 @@ void send_pkt(int mtu) {
     }
 }
 
-void send_park_state(bool b) {
-    if(b)
-        park_state = 1;
-    else
+void send_park_state(char c) {
+    if(c == 'r')
         park_state = 0;
+    else if(c == 't')
+        park_state = 1;
+    else if(c == 'y')
+        park_state = 2;
     
     memset(&cf, 0, sizeof(cf));
     cf.can_id = park_id;
@@ -128,11 +130,14 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-                case SDLK_o:
-                    send_park_state(1);
+                case SDLK_y:
+                    send_park_state('y');
                     break;
-                case SDLK_p:
-                    send_park_state(0);
+                case SDLK_t:
+                    send_park_state('t');
+                    break;
+                case SDLK_r:
+                    send_park_state('r');
                     break;
                 }
             }

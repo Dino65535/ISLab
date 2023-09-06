@@ -573,13 +573,13 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-                case SDLK_q:
+                case SDLK_a:
                     send_battery_state(1);
                     break;
-                case SDLK_w:
+                case SDLK_s:
                     send_battery_state(0);
                     break;
-                case SDLK_b:
+                case SDLK_d:
                     communicate_with_charging_pile();
                     break;
                 }
