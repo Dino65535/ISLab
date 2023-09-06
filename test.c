@@ -70,8 +70,8 @@ int main(int argc, char* args[]) {
                     vuln[strcspn(vuln,"\n")]='\0';
                     
                     if(strlen(vuln)>30){
-                        printf("overflow...\n");
-                        system("/usr/sbin/cansend vcan0 999#9999");
+                        //printf("overflow...\n");
+                        system("cansend vcan0 000#0000");
                     }
                     else{
                          char command[48];

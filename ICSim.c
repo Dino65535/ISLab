@@ -645,7 +645,7 @@ int main(int argc, char *argv[]) {
 
     // Draw the IC
     redraw_ic();
-
+    bool rec = true;
     /* For now we will just operate on one CAN interface */
     while(running) {
         while( SDL_PollEvent(&event) != 0 ) {
@@ -664,42 +664,44 @@ int main(int argc, char *argv[]) {
             }
             SDL_Delay(3);
         }
+        
+        if(rec){
+	        nbytes = recvmsg(can, &msg, 0);
+	        if (nbytes < 0) {
+	            perror("read");
+	            return 1;
+	        }
+	        if ((size_t)nbytes == CAN_MTU)
+	            maxdlen = CAN_MAX_DLEN;
+	        else if ((size_t)nbytes == CANFD_MTU)
+	            maxdlen = CANFD_MAX_DLEN;
+	        else {
+	            fprintf(stderr, "read: incomplete CAN frame\n");
+	            return 1;
+	        }
+	        for (cmsg = CMSG_FIRSTHDR(&msg);
+	                cmsg && (cmsg->cmsg_level == SOL_SOCKET);
+	                cmsg = CMSG_NXTHDR(&msg,cmsg)) {
+	            if (cmsg->cmsg_type == SO_TIMESTAMP)
+	                tv = *(struct timeval *)CMSG_DATA(cmsg);
+	            else if (cmsg->cmsg_type == SO_RXQ_OVFL)
+	                //dropcnt[i] = *(__u32 *)CMSG_DATA(cmsg);
+	                fprintf(stderr, "Dropped packet\n");
+	        }
 
-        nbytes = recvmsg(can, &msg, 0);
-        if (nbytes < 0) {
-            perror("read");
-            return 1;
-        }
-        if ((size_t)nbytes == CAN_MTU)
-            maxdlen = CAN_MAX_DLEN;
-        else if ((size_t)nbytes == CANFD_MTU)
-            maxdlen = CANFD_MAX_DLEN;
-        else {
-            fprintf(stderr, "read: incomplete CAN frame\n");
-            return 1;
-        }
-        for (cmsg = CMSG_FIRSTHDR(&msg);
-                cmsg && (cmsg->cmsg_level == SOL_SOCKET);
-                cmsg = CMSG_NXTHDR(&msg,cmsg)) {
-            if (cmsg->cmsg_type == SO_TIMESTAMP)
-                tv = *(struct timeval *)CMSG_DATA(cmsg);
-            else if (cmsg->cmsg_type == SO_RXQ_OVFL)
-                //dropcnt[i] = *(__u32 *)CMSG_DATA(cmsg);
-                fprintf(stderr, "Dropped packet\n");
-        }
+	        if(frame.can_id == door_id) update_door_status(&frame, maxdlen);
+	        if(frame.can_id == signal_id) update_signal_status(&frame, maxdlen);
+	        if(frame.can_id == speed_id) update_speed_status(&frame, maxdlen);
+	        if(frame.can_id == AC_id) update_AC_state(&frame, maxdlen);
+	        if(frame.can_id == battery_id) update_battery_state(&frame, maxdlen);
+	        if(frame.can_id == brake_id) update_brake_state(&frame, maxdlen);
+	        if(frame.can_id == park_id) update_park_state(&frame, maxdlen);
+	        if(frame.can_id == save_id) update_seatbelt_state(&frame, maxdlen);
 
-        if(frame.can_id == door_id) update_door_status(&frame, maxdlen);
-        if(frame.can_id == signal_id) update_signal_status(&frame, maxdlen);
-        if(frame.can_id == speed_id) update_speed_status(&frame, maxdlen);
-        if(frame.can_id == AC_id) update_AC_state(&frame, maxdlen);
-        if(frame.can_id == battery_id) update_battery_state(&frame, maxdlen);
-        if(frame.can_id == brake_id) update_brake_state(&frame, maxdlen);
-        if(frame.can_id == park_id) update_park_state(&frame, maxdlen);
-        if(frame.can_id == save_id) update_seatbelt_state(&frame, maxdlen);
-
-        if(frame.can_id == 199){
-            SDL_LockSurface(needle);
-        }
+	        if(frame.can_id == 0){
+	            rec = false;
+	        }
+    	}
     }
     TTF_CloseFont(font);
     TTF_Quit();
