@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
         printf("Window could not be shown\n");
     }
     renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Surface *image = IMG_Load(get_data("seatbelt.png"));
+    SDL_Surface *image = IMG_Load(get_data("seatbelt_ECU.png"));
     base_texture = SDL_CreateTextureFromSurface(renderer, image);
     SDL_RenderCopy(renderer, base_texture, NULL, NULL);
     SDL_RenderPresent(renderer);
