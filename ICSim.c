@@ -16,7 +16,7 @@
 #include <stdbool.h>
 
 #ifndef DATA_DIR
-#define DATA_DIR "./img/"  // Needs trailing slash
+#define DATA_DIR "./img/"
 #endif
 
 #define DEFAULT_battery_ID 700
@@ -47,37 +47,28 @@
 #define DEFAULT_SPEED_BYTE 3 // bytes 3,4
 
 const int canfd_on = 1;
-
-int ac = 0;
-int word = 0;
-int battery = 0;
-int seatbelt = 0;
-int Brake = 0;
-int Park = 0;
-
+char data_file[256];
+//ECU status==========================
+int ac = 0, battery = 0, seatbelt = 0, brake = 0, park = 0;
+long current_speed = 0;
+int door_status[4];
+int turn_status[2];
+//frame data position=================
 int door_pos = DEFAULT_DOOR_BYTE;
 int signal_pos = DEFAULT_SIGNAL_BYTE;
 int speed_pos = DEFAULT_SPEED_BYTE;
 int AC_pos = DEFAULT_BYTE;
 int battery_pos = DEFAULT_BYTE;
-int save_pos = DEFAULT_BYTE;
+int seatbelt_pos = DEFAULT_BYTE;
 int brake_pos = DEFAULT_BYTE;
 int park_pos = DEFAULT_BYTE;
-
-long current_speed = 0;
-int door_status[4];
-int turn_status[2];
-char data_file[256];
-
+//dashboard texture====================
 SDL_Renderer *renderer = NULL;
 SDL_Texture *base_texture = NULL;
 SDL_Texture *needle_tex = NULL;
 SDL_Texture *sprite_tex = NULL;
 SDL_Rect speed_rect;
-//文字
-SDL_Texture *power_font_texture = NULL;
-
-//new
+//dashboard indicator light texture====
 SDL_Texture *AC_black_tex = NULL;
 SDL_Texture *AC_white_tex = NULL;
 SDL_Texture *battery_empty_tex = NULL;
@@ -87,22 +78,22 @@ SDL_Texture *brake_yellow_tex = NULL;
 SDL_Texture *park_yellow_tex = NULL;
 SDL_Texture *seatbelt_red_tex = NULL;
 SDL_Texture *park_red_tex = NULL;
-
-//文字
+//battery SDL & font==================
 int power = 100;
-char* test = NULL;
+char* power_string = NULL;
 SDL_Surface *font_surface;
 TTF_Font *font;
 SDL_Color color= {255, 255, 255};
-SDL_Rect font_pos = { 550, 0, 80, 80 }; //time pos
-SDL_Rect word1_dis = { 550, 240, 80, 80 }; //% pos
-
-SDL_Rect battery_green_pos = { 550, 100, 80, 150};
-SDL_Rect battery_empty_pos = { 550, 100, 80, 150};
-SDL_Rect AC_dis = { 0, 0, 140, 90};
-SDL_Rect brake_dis = { 0, 250, 70, 70};
-SDL_Rect park_dis = { 90, 250, 70, 70};
-SDL_Rect save_dis = { 180, 250, 80, 80};
+SDL_Rect word1_dis = { 550, 240, 80, 80 }; //% pos---
+SDL_Texture *power_font_texture = NULL;
+//dashboard indicator light position====
+SDL_Rect battery_green_rect = { 550, 100, 80, 150};
+SDL_Rect battery_empty_rect = { 550, 100, 80, 150};
+SDL_Rect font_rect = { 550, 0, 80, 80 };
+SDL_Rect AC_rect = { 0, 0, 140, 90};
+SDL_Rect brake_rect = { 0, 250, 70, 70};
+SDL_Rect park_rect = { 90, 250, 70, 70};
+SDL_Rect seatbelt_rect = { 180, 250, 80, 80};
 
 
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
@@ -160,54 +151,54 @@ void update_speed() {
 
 void update_AC() {
     if(ac == 0) {
-        SDL_RenderFillRect(renderer, &AC_dis);
-        SDL_RenderCopy(renderer, AC_black_tex, NULL, &AC_dis);
+        SDL_RenderFillRect(renderer, &AC_rect);
+        SDL_RenderCopy(renderer, AC_black_tex, NULL, &AC_rect);
     } else if(ac == 1) {
-        SDL_RenderFillRect(renderer, &AC_dis);
-        SDL_RenderCopy(renderer, AC_white_tex, NULL, &AC_dis);
+        SDL_RenderFillRect(renderer, &AC_rect);
+        SDL_RenderCopy(renderer, AC_white_tex, NULL, &AC_rect);
     }
 }
 
 void update_brake() {
-    if(Brake == 0) { //close
-        SDL_RenderFillRect(renderer, &brake_dis);
-    } else if(Brake == 1) { //yellow
-        SDL_RenderFillRect(renderer, &brake_dis);
-        SDL_RenderCopy(renderer, brake_yellow_tex, NULL, &brake_dis);
-    } else if(Brake == 2) { //red
-        SDL_RenderFillRect(renderer, &brake_dis);
-        SDL_RenderCopy(renderer, brake_red_tex, NULL, &brake_dis);
+    if(brake == 0) { //close
+        SDL_RenderFillRect(renderer, &brake_rect);
+    } else if(brake == 1) { //yellow
+        SDL_RenderFillRect(renderer, &brake_rect);
+        SDL_RenderCopy(renderer, brake_yellow_tex, NULL, &brake_rect);
+    } else if(brake == 2) { //red
+        SDL_RenderFillRect(renderer, &brake_rect);
+        SDL_RenderCopy(renderer, brake_red_tex, NULL, &brake_rect);
     }
 }
 
 void update_seatbelt() {
     if(seatbelt == 0)
-        SDL_RenderFillRect(renderer, &save_dis);
+        SDL_RenderFillRect(renderer, &seatbelt_rect);
     if(seatbelt == 1) {
-        SDL_RenderFillRect(renderer, &save_dis);
-        SDL_RenderCopy(renderer, seatbelt_red_tex, NULL, &save_dis);
+        SDL_RenderFillRect(renderer, &seatbelt_rect);
+        SDL_RenderCopy(renderer, seatbelt_red_tex, NULL, &seatbelt_rect);
     }
 }
 
 void update_park() {
-    if(Park == 0) {
-        SDL_RenderFillRect(renderer, &park_dis);
-    } else if(Park == 1) {
-        SDL_RenderFillRect(renderer, &park_dis);
-        SDL_RenderCopy(renderer, park_yellow_tex, NULL, &park_dis);
-    } else if(Park == 2) {
-        SDL_RenderFillRect(renderer, &park_dis);
-        SDL_RenderCopy(renderer, park_red_tex, NULL, &park_dis);
+    if(park == 0) {
+        SDL_RenderFillRect(renderer, &park_rect);
+    } else if(park == 1) {
+        SDL_RenderFillRect(renderer, &park_rect);
+        SDL_RenderCopy(renderer, park_yellow_tex, NULL, &park_rect);
+    } else if(park == 2) {
+        SDL_RenderFillRect(renderer, &park_rect);
+        SDL_RenderCopy(renderer, park_red_tex, NULL, &park_rect);
     }
 }
 
 void update_battery() {
-	SDL_RenderCopy(renderer, base_texture, &battery_empty_pos, &battery_empty_pos); //redraw
-    SDL_RenderCopy(renderer, battery_green_tex, NULL, &battery_green_pos);
-    SDL_RenderCopy(renderer, battery_empty_tex, NULL, &battery_empty_pos);
+	SDL_RenderCopy(renderer, base_texture, &battery_empty_rect, &battery_empty_rect); //redraw
+    SDL_RenderCopy(renderer, battery_green_tex, NULL, &battery_green_rect);
+    SDL_RenderCopy(renderer, battery_empty_tex, NULL, &battery_empty_rect);
 
-    SDL_RenderCopy(renderer, base_texture, &font_pos, &font_pos);
-    SDL_RenderCopy(renderer, power_font_texture, NULL, &font_pos);
+    SDL_RenderCopy(renderer, base_texture, &font_rect, &font_rect);
+    SDL_RenderCopy(renderer, power_font_texture, NULL, &font_rect);
 }
 
 void update_doors() {
@@ -315,7 +306,7 @@ void update_brake_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < brake_pos) return;
 
-    Brake = cf->data[brake_pos];
+    brake = cf->data[brake_pos];
 
     update_brake();
     SDL_RenderPresent(renderer);
@@ -325,7 +316,7 @@ void update_park_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
     if(len < park_pos) return;
 
-    Park = cf->data[park_pos];
+    park = cf->data[park_pos];
 
     update_park();
     SDL_RenderPresent(renderer);
@@ -343,9 +334,9 @@ void update_AC_state(struct canfd_frame *cf, int maxdlen) {
 
 void update_seatbelt_state(struct canfd_frame *cf, int maxdlen) {
     int len = (cf->len > maxdlen) ? maxdlen : cf->len;
-    if(len < save_pos) return;
+    if(len < seatbelt_pos) return;
 
-    seatbelt = cf->data[save_pos];
+    seatbelt = cf->data[seatbelt_pos];
 
     update_seatbelt();
     SDL_RenderPresent(renderer);
@@ -356,20 +347,20 @@ void update_battery_state(struct canfd_frame *cf, int maxdlen) {
     if(len < battery_pos) return;
 
     if(cf->data[battery_pos] == 1) {
-        battery_green_pos.y += 10;
-        battery_green_pos.h -= 10;
+        battery_green_rect.y += 10;
+        battery_green_rect.h -= 10;
         power -= 7;
         if(power < 0)power = 0;
     } else if(cf->data[battery_pos] == 0) {
-        battery_green_pos.y = 100;
-        battery_green_pos.h = 150;
+        battery_green_rect.y = 100;
+        battery_green_rect.h = 150;
         power = 100;
     }
 
-    test = (char*)malloc(5 * sizeof(char)); 
-    sprintf(test, "%d%%", power);
-    TTF_SizeUTF8(font, test, 0, 0);
-    font_surface = TTF_RenderUTF8_Solid(font, test, color); //color
+    power_string = (char*)malloc(5 * sizeof(char)); 
+    sprintf(power_string, "%d%%", power);
+    TTF_SizeUTF8(font, power_string, 0, 0);
+    font_surface = TTF_RenderUTF8_Solid(font, power_string, color); //color
     power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
 
     update_battery();
@@ -448,10 +439,10 @@ int main(int argc, char *argv[]) {
     int nbytes, maxdlen;
         
     TTF_Init();
-    test = (char*)malloc(5 * sizeof(char)); 
-    sprintf(test, "%d%%", power);
+    power_string = (char*)malloc(5 * sizeof(char)); 
+    sprintf(power_string, "%d%%", power);
     font = TTF_OpenFont("font.ttc", 30);
-    TTF_SizeUTF8(font, test, 0, 0);
+    TTF_SizeUTF8(font, power_string, 0, 0);
 
     SDL_Event event;
 
@@ -507,7 +498,7 @@ int main(int argc, char *argv[]) {
     needle_tex = SDL_CreateTextureFromSurface(renderer, needle);
     sprite_tex = SDL_CreateTextureFromSurface(renderer, sprites);
     //文字
-    font_surface = TTF_RenderUTF8_Solid(font, test, color);
+    font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
     power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
 
     SDL_Surface *AC_black = IMG_Load(get_data("AC_black.png"));
@@ -594,7 +585,7 @@ int main(int argc, char *argv[]) {
 	        }
     	}
     }
-    free(test);
+    free(power_string);
     TTF_CloseFont(font);
     TTF_Quit();
     SDL_DestroyTexture(battery_empty_tex);
