@@ -635,7 +635,7 @@ int main(int argc, char *argv[]) {
 	        	}
 	        }
 
-	        if(frame.can_id == 0 || power == 0){
+	        if(frame.can_id == 0){
 	            rec = false;
 	            charge = true;
 	        }
