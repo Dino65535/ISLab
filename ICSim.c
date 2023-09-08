@@ -20,6 +20,7 @@
 #endif
 
 #define DEFAULT_battery_ID 700
+#define DEFAULT_charge_ID 001
 #define DEFAULT_save_ID 950
 #define DEFAULT_AC_ID 800
 #define DEFAULT_brake_ID 600
@@ -46,6 +47,7 @@
 #define DEFAULT_SPEED_ID 580 // 0x244
 #define DEFAULT_SPEED_BYTE 3 // bytes 3,4
 
+int can;
 const int canfd_on = 1;
 char data_file[256];
 //ECU status==========================
@@ -79,7 +81,8 @@ SDL_Texture *park_yellow_tex = NULL;
 SDL_Texture *seatbelt_red_tex = NULL;
 SDL_Texture *park_red_tex = NULL;
 //battery SDL & font==================
-int power = 100;
+int power = 100, times = 0;;
+bool charge = false;
 char* power_string = NULL;
 SDL_Surface *font_surface;
 TTF_Font *font;
@@ -87,8 +90,8 @@ SDL_Color color= {255, 255, 255};
 SDL_Rect word1_dis = { 550, 240, 80, 80 }; //% pos---
 SDL_Texture *power_font_texture = NULL;
 //dashboard indicator light position====
-SDL_Rect battery_green_rect = { 550, 100, 80, 150}; //+10
-SDL_Rect battery_empty_rect = { 550, 100, 80, 150};
+SDL_Rect battery_green_rect = { 550, 100, 80, 160}; //+10
+SDL_Rect battery_empty_rect = { 550, 100, 80, 160};
 SDL_Rect font_rect = { 550, 20, 80, 80 };
 SDL_Rect AC_rect = { 0, 0, 140, 90};
 SDL_Rect brake_rect = { 0, 250, 70, 70};
@@ -347,15 +350,11 @@ void update_battery_state(struct canfd_frame *cf, int maxdlen) {
     if(len < battery_pos) return;
 
     if(cf->data[battery_pos] == 1) {
-        //battery_green_rect.y += 10;
-        //battery_green_rect.h -= 10;
-        //power -= 7;
         battery_green_rect.h = 0;
         power = 0;
-        //if(power < 0)power = 0;
     } else if(cf->data[battery_pos] == 0) {
         battery_green_rect.y = 100;
-        battery_green_rect.h = 150;
+        battery_green_rect.h = 160;
         power = 100;
     }
 
@@ -426,8 +425,42 @@ void update_door_status(struct canfd_frame *cf, int maxdlen) {
     SDL_RenderPresent(renderer);
 }
 
+void update_charge_state(struct canfd_frame *cf, int maxdlen) {
+    int len = (cf->len > maxdlen) ? maxdlen : cf->len;
+    if(len < battery_pos) return;
+
+    if(cf->data[battery_pos] == 1) { 
+    	charge = true;
+    	int charge_time = (100-power)/10;
+    	if(power%10 > 0) charge_time++;
+
+    	//return charge times
+    	struct canfd_frame frame;
+    	memset(&frame, 0, sizeof(frame));
+    	frame.can_id = 0;
+	    frame.len = 1;
+	    frame.data[0] = charge_time;
+    	write(can, &frame, CAN_MTU); 
+    } else if(cf->data[battery_pos] == 2) { //charging
+    	power += 10;
+    	if(power >= 100) {
+    		power = 100;
+    		times = 0;
+    		charge = false;
+    	}
+        battery_green_rect.y -= 16;
+        battery_green_rect.h += 16;
+	    power_string = (char*)malloc(5 * sizeof(char)); 
+		sprintf(power_string, "%d%%", power);
+		TTF_SizeUTF8(font, power_string, 0, 0);
+		font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
+		power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+
+		update_battery();
+		SDL_RenderPresent(renderer);   
+    }
+}
 int main(int argc, char *argv[]) {
-    int can;
     struct ifreq ifr;
     struct sockaddr_can addr;
     struct canfd_frame frame;
@@ -448,14 +481,13 @@ int main(int argc, char *argv[]) {
 
     SDL_Event event;
 
-    // Create a new raw CAN socket
-    can = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    if(can < 0) exit(1);
+    
+    if ((can = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) exit(1);
 
     addr.can_family = AF_CAN;
     memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
     strncpy(ifr.ifr_name, argv[optind], strlen(argv[optind]));
-    printf("Using CAN interface %s\n", ifr.ifr_name);
+    //printf("Using CAN interface %s\n", ifr.ifr_name);
     if (ioctl(can, SIOCGIFINDEX, &ifr) < 0) {
         perror("SIOCGIFINDEX");
         exit(1);
@@ -531,7 +563,7 @@ int main(int argc, char *argv[]) {
     // Draw the IC
     redraw_ic();
     bool rec = true;
-    int times = 0;
+    
 
     while(running) {
         while( SDL_PollEvent(&event) != 0 ) {
@@ -541,17 +573,10 @@ int main(int argc, char *argv[]) {
                 break;
             case SDL_WINDOWEVENT:
                 switch(event.window.event) {
-
                 case SDL_WINDOWEVENT_RESIZED:
                     redraw_ic();
                     break;
                 }
-            case SDL_KEYDOWN :
-            	switch(event.key.keysym.sym) {
-            	case SDLK_a:
-            		
-            		break;
-            	} 
             SDL_Delay(3);
         	}
     	}
@@ -587,10 +612,11 @@ int main(int argc, char *argv[]) {
 	        if(frame.can_id == DEFAULT_brake_ID) update_brake_state(&frame, maxdlen);
 	        if(frame.can_id == DEFAULT_park_ID) update_park_state(&frame, maxdlen);
 	        if(frame.can_id == DEFAULT_save_ID) update_seatbelt_state(&frame, maxdlen);
+	        if(frame.can_id == DEFAULT_charge_ID) update_charge_state(&frame, maxdlen);
 	        if(frame.can_id == DEFAULT_SPEED_ID) {
 	        	update_speed_status(&frame, maxdlen);
 	        	times++;
-	        	if(times >= 100){
+	        	if(times >= 100 && !charge){
 	        		times = 0;
 
 	        		power-=2;
@@ -611,6 +637,7 @@ int main(int argc, char *argv[]) {
 
 	        if(frame.can_id == 0 || power == 0){
 	            rec = false;
+	            charge = true;
 	        }
     	}
     }

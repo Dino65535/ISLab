@@ -23,6 +23,7 @@
 #endif
 
 #define DEFAULT_battery_ID 700
+#define DEFAULT_charge_ID 001
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 
@@ -39,6 +40,10 @@ int battery_pos = 0;
 int battery_len = 1;
 char battery_state = 1;
 int battery_id = DEFAULT_battery_ID;
+
+char charge_state = 1;
+int charge_id = DEFAULT_charge_ID;
+int charge_times = 0;
 
 char data_file[256];
 
@@ -74,6 +79,19 @@ void send_battery_state(bool b) {
     cf.can_id = battery_id;
     cf.len = battery_len;
     cf.data[battery_pos] = battery_state;
+    send_pkt(CAN_MTU);
+}
+
+void sned_charge_state(bool b) {
+    if(b) {
+        charge_state = 1;
+    } else {
+        charge_state = 2;
+    }
+    memset(&cf, 0, sizeof(cf));
+    cf.can_id = charge_id;
+    cf.len = battery_len;
+    cf.data[battery_pos] = charge_state;
     send_pkt(CAN_MTU);
 }
 //----------------------------
@@ -114,7 +132,7 @@ void Create_TCP() {
 void TCP_Send_Message(cJSON *packet) {
     char *json_str = cJSON_Print(packet);
 
-    printf("TCP傳送 :%s\n", json_str);
+    //printf("TCP傳送 :%s\n", json_str);
 
     send(socket_fd, json_str, strlen(json_str), 0);
     cJSON_Delete(packet);
@@ -132,15 +150,15 @@ void TCP_Read_Message() {
     }
 
     char *json_str = cJSON_Print(response);
-    printf("TCP接收訊息:\n%s\n", json_str);
-    printf("--------------------\n");
+    //printf("TCP接收訊息:\n%s\n", json_str);
+    //printf("--------------------\n");
 
     free(json_str);
     cJSON_Delete(response);
 }
 
 void Init_Stage() {
-    printf("Init_Stage :\n");
+    //printf("Init_Stage :\n");
 
     cJSON *SDP = cJSON_CreateObject(), *Header = cJSON_CreateObject();
     cJSON_AddNumberToObject(Header, "POROTOCL_VERSION", 1);
@@ -170,7 +188,7 @@ void Init_Stage() {
     }
     memset(json_str, 0, sizeof(json_str));
     json_str = cJSON_Print(response);
-    printf("UDP接收訊息:\n%s\n", json_str);
+    //printf("UDP接收訊息:\n%s\n", json_str);
 
     cJSON *portObject = cJSON_GetObjectItem(response, "Port");
     TCP_PORT = portObject->valueint;
@@ -180,12 +198,12 @@ void Init_Stage() {
     cJSON_Delete(response);
     free(json_str);
     close(socket_fd);
-    printf("UDP關閉\n");
-    printf("--------------------\n");
+    //printf("UDP關閉\n");
+    //printf("--------------------\n");
 }
 
 void Supported_App_Protocol_Stage() {
-    printf("Supported_App_Protocol_Stage :\n");
+    //printf("Supported_App_Protocol_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *supportedAppProtocolReq = cJSON_CreateObject();
@@ -207,7 +225,7 @@ void Supported_App_Protocol_Stage() {
 }
 
 void Session_Setup_Stage() {
-    printf("Session_Setup_Stage :\n");
+    //printf("Session_Setup_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -241,8 +259,8 @@ void Session_Setup_Stage() {
     }
 
     char *json_str = cJSON_Print(response);
-    printf("TCP接收訊息:\n%s\n", json_str);
-    printf("--------------------\n");
+    //printf("TCP接收訊息:\n%s\n", json_str);
+    //printf("--------------------\n");
 
     char *session_ID = cJSON_GetObjectItem(response, "V2G_Message")->child->child->valuestring;
     cJSON_AddStringToObject(session_ID_header, "SessionID", session_ID);
@@ -252,7 +270,7 @@ void Session_Setup_Stage() {
 }
 
 void Service_Discovery_Stage() {
-    printf("Service_Discovery_Stage :\n");
+    //printf("Service_Discovery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -270,7 +288,7 @@ void Service_Discovery_Stage() {
 }
 
 void Payment_Service_Selection_Stage() {
-    printf("Payment_Service_Selection_Stag :\n");
+    //printf("Payment_Service_Selection_Stag :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -297,7 +315,7 @@ void Payment_Service_Selection_Stage() {
 }
 
 void Authorization_Stage() {
-    printf("Authorization_Stage :\n");
+    //printf("Authorization_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -315,7 +333,7 @@ void Authorization_Stage() {
 }
 
 void Charge_Parameter_Discovery_Stage() {
-    printf("Charge_Parameter_Discovery_Stage :\n");
+    //printf("Charge_Parameter_Discovery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -364,7 +382,7 @@ void Charge_Parameter_Discovery_Stage() {
 }
 
 void Power_Delivery_Stage(bool b) {
-    printf("Power_Delivery_Stage :\n");
+    //printf("Power_Delivery_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -425,7 +443,7 @@ void Power_Delivery_Stage(bool b) {
 }
 
 void Charging_State() {
-    printf("Charging_State :\n");
+    //printf("Charging_State :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -443,7 +461,7 @@ void Charging_State() {
 }
 
 void Session_and_TCP_Server_Stop_Stage() {
-    printf("Session_and_TCP_Server_Stop_Stage :\n");
+    //printf("Session_and_TCP_Server_Stop_Stage :\n");
 
     cJSON *packet = cJSON_CreateObject();
     cJSON *V2G_Message = cJSON_CreateObject();
@@ -463,7 +481,7 @@ void Session_and_TCP_Server_Stop_Stage() {
     if (close(socket_fd) < 0) {
         perror("伺服器關閉失敗");
     } else {
-        perror("TCP關閉");
+        printf("TCP關閉");
     }
 }
 
@@ -496,11 +514,15 @@ void communicate_with_charging_pile() {
     Power_Delivery_Stage(true); //true >> ChargeProgress : Start
     sleep(1);
 
-    for(int i = 0; i<5; i++) { //假設傳送5次就充滿電了
+    for(int i = 1; i<=charge_times; i++) { //假設傳送5次就充滿電了
         Charging_State();
+        sned_charge_state(0);
+        printf("充電%d次\n", i);
         sleep(1);
     }
-
+    printf("充電結束\n");
+    printf("--------------------\n");
+    
     Power_Delivery_Stage(false); //false >> ChargeProgress : Stop
     sleep(1);
 
@@ -580,6 +602,13 @@ int main(int argc, char *argv[]) {
                     send_battery_state(0);
                     break;
                 case SDLK_d:
+                    sned_charge_state(1);
+                    while(read(s, &cf, sizeof(struct canfd_frame))) {
+                        if(cf.can_id == 000) {
+                            charge_times = cf.data[0];
+                            break;
+                        }
+                    }
                     communicate_with_charging_pile();
                     break;
                 }
