@@ -350,6 +350,7 @@ void update_battery_state(struct canfd_frame *cf, int maxdlen) {
     if(len < battery_pos) return;
 
     if(cf->data[battery_pos] == 1) {
+    	battery_green_rect.y = 260;
         battery_green_rect.h = 0;
         power = 0;
     } else if(cf->data[battery_pos] == 0) {

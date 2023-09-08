@@ -522,7 +522,7 @@ void communicate_with_charging_pile() {
     }
     printf("充電結束\n");
     printf("--------------------\n");
-    
+
     Power_Delivery_Stage(false); //false >> ChargeProgress : Stop
     sleep(1);
 
