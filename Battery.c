@@ -569,8 +569,8 @@ int main(int argc, char *argv[]) {
     // GUI Setup
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
-
-    window = SDL_CreateWindow("Battery", 310, 600, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    
+    window = SDL_CreateWindow("Battery", 0, 320, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }

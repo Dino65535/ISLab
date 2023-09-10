@@ -77,9 +77,12 @@ SDL_Texture *battery_empty_tex = NULL;
 SDL_Texture *battery_green_tex = NULL;
 SDL_Texture *brake_red_tex = NULL;
 SDL_Texture *brake_yellow_tex = NULL;
-SDL_Texture *park_yellow_tex = NULL;
-SDL_Texture *seatbelt_red_tex = NULL;
+SDL_Texture *brake_white_tex = NULL;
 SDL_Texture *park_red_tex = NULL;
+SDL_Texture *park_yellow_tex = NULL;
+SDL_Texture *park_white_tex = NULL;
+SDL_Texture *seatbelt_red_tex = NULL;
+SDL_Texture *seatbelt_white_tex = NULL;
 //battery SDL & font==================
 int power = 100, times = 0;;
 bool charge = false;
@@ -165,6 +168,7 @@ void update_AC() {
 void update_brake() {
     if(brake == 0) { //close
         SDL_RenderFillRect(renderer, &brake_rect);
+        SDL_RenderCopy(renderer, brake_white_tex, NULL, &brake_rect);     
     } else if(brake == 1) { //yellow
         SDL_RenderFillRect(renderer, &brake_rect);
         SDL_RenderCopy(renderer, brake_yellow_tex, NULL, &brake_rect);
@@ -175,9 +179,10 @@ void update_brake() {
 }
 
 void update_seatbelt() {
-    if(seatbelt == 0)
+    if(seatbelt == 0) {
         SDL_RenderFillRect(renderer, &seatbelt_rect);
-    if(seatbelt == 1) {
+    	SDL_RenderCopy(renderer, seatbelt_white_tex, NULL, &seatbelt_rect);
+    } else if (seatbelt == 1) {
         SDL_RenderFillRect(renderer, &seatbelt_rect);
         SDL_RenderCopy(renderer, seatbelt_red_tex, NULL, &seatbelt_rect);
     }
@@ -186,6 +191,7 @@ void update_seatbelt() {
 void update_park() {
     if(park == 0) {
         SDL_RenderFillRect(renderer, &park_rect);
+        SDL_RenderCopy(renderer, park_white_tex, NULL, &park_rect);
     } else if(park == 1) {
         SDL_RenderFillRect(renderer, &park_rect);
         SDL_RenderCopy(renderer, park_yellow_tex, NULL, &park_rect);
@@ -535,26 +541,35 @@ int main(int argc, char *argv[]) {
     //文字
     font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
     power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
-
+    //AC
     SDL_Surface *AC_black = IMG_Load(get_data("AC_black.png"));
     AC_black_tex = SDL_CreateTextureFromSurface(renderer, AC_black);
     SDL_Surface *AC_white = IMG_Load(get_data("AC_white.png"));
     AC_white_tex = SDL_CreateTextureFromSurface(renderer, AC_white);
+    //battery
     SDL_Surface *battery_empty = IMG_Load(get_data("battery_empty.png"));
     battery_empty_tex = SDL_CreateTextureFromSurface(renderer, battery_empty);
     SDL_Surface *battery_green = IMG_Load(get_data("battery_green.png"));
     battery_green_tex = SDL_CreateTextureFromSurface(renderer, battery_green);
-
+    //park
     SDL_Surface *park_red = IMG_Load(get_data("park_red.png"));
     park_red_tex = SDL_CreateTextureFromSurface(renderer, park_red);
     SDL_Surface *park_yellow = IMG_Load(get_data("park_yellow.png"));
     park_yellow_tex = SDL_CreateTextureFromSurface(renderer, park_yellow);
-    SDL_Surface *seatbelt_red = IMG_Load(get_data("seatbelt_red.png")); //change name
+    SDL_Surface *park_white = IMG_Load(get_data("park_white.png"));
+    park_white_tex = SDL_CreateTextureFromSurface(renderer, park_white);
+    //seatbelt
+    SDL_Surface *seatbelt_red = IMG_Load(get_data("seatbelt_red.png"));
     seatbelt_red_tex = SDL_CreateTextureFromSurface(renderer, seatbelt_red);
+    SDL_Surface *seatbelt_white = IMG_Load(get_data("seatbelt_white.png"));
+    seatbelt_white_tex = SDL_CreateTextureFromSurface(renderer, seatbelt_white);
+    //brake
     SDL_Surface *brake_red = IMG_Load(get_data("brake_red.png"));
     brake_red_tex = SDL_CreateTextureFromSurface(renderer, brake_red);
     SDL_Surface *brake_yellow = IMG_Load(get_data("brake_yellow.png"));
     brake_yellow_tex = SDL_CreateTextureFromSurface(renderer, brake_yellow);
+    SDL_Surface *brake_white = IMG_Load(get_data("brake_white.png"));
+    brake_white_tex = SDL_CreateTextureFromSurface(renderer, brake_white);
 
     speed_rect.x = 212;
     speed_rect.y = 175;
