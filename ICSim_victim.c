@@ -532,7 +532,7 @@ int main(int argc, char *argv[]) {
     }
 
     renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Surface *image = IMG_Load(get_data("ic.png"));
+    SDL_Surface *image = IMG_Load(get_data("ic_victim.png"));
     SDL_Surface *needle = IMG_Load(get_data("needle.png"));
     SDL_Surface *sprites = IMG_Load(get_data("spritesheet.png"));
     base_texture = SDL_CreateTextureFromSurface(renderer, image);
