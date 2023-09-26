@@ -23,7 +23,6 @@
 #define SCREEN_WIDTH 300
 #define SCREEN_HEIGHT 250
 #define MAX_SPEED 300.0
-#define ACCEL_RATE 8.0 // 0-MAX_SPEED in seconds
 
 int s; // socket
 struct canfd_frame cf;
@@ -37,7 +36,6 @@ int speed_id = DEFAULT_SPEED_ID;
 int currentTime;
 int lastAccel = 0;
 
-int kk = 0;
 char data_file[256];
 
 SDL_Haptic *gHaptic = NULL;
@@ -65,62 +63,24 @@ void send_speed() {
     cf.len = speed_len;
     cf.data[speed_pos+1] = (char)kph & 0xff;
     cf.data[speed_pos] = (char)(kph >> 8) & 0xff;
-    if(kph == 0) { // IDLE
-        cf.data[speed_pos] = 1;
-        cf.data[speed_pos+1] = rand() % 255+100;
-    }
-    send_pkt(CAN_MTU);
+    cf.data[speed_pos+1] = rand() % 255+100;
 
+    send_pkt(CAN_MTU);
 }
 
 void checkAccel() {
-    float rate = MAX_SPEED / (ACCEL_RATE * 100);
     // Updated every 10 ms
     if(currentTime > lastAccel + 10) {
         if(throttle < 0) {
-            current_speed -= rate;
-            if(current_speed < 1) current_speed = 0;
-        } else if(throttle > 0) {
-            current_speed += rate;
-            if(current_speed > MAX_SPEED) { // Limiter
-                current_speed = MAX_SPEED;
-                if(gHaptic != NULL) {
-                    SDL_HapticRumblePlay( gHaptic, 0.5, 1000);
-                    printf("DEBUG HAPTIC\n");
-                }
-            }
-        }
+            current_speed -= 10;
+            if(current_speed < 0)current_speed = 0;
+        } else if (throttle > 0) {
+            current_speed += 10;
+            if(current_speed > MAX_SPEED)current_speed = MAX_SPEED;
+        } 
         send_speed();
+        throttle = 0;
         lastAccel = currentTime;
-    }
-}
-
-void kk_check(int k) {
-    switch(k) {
-    case SDLK_RETURN:
-        if(kk == 0xa) printf("KK\n");
-        kk = 0;
-        break;
-    case SDLK_UP:
-        kk = (kk < 2) ? kk+1 : 0;
-        break;
-    case SDLK_DOWN:
-        kk = (kk > 1 && kk < 4) ? kk+1 : 0;
-        break;
-    case SDLK_LEFT:
-        kk = (kk == 4 || kk == 6) ? kk+1 : 0;
-        break;
-    case SDLK_RIGHT:
-        kk = (kk == 5 || kk == 7) ? kk+1 : 0;
-        break;
-    case SDLK_a:
-        kk = kk == 9 ? kk+1 : 0;
-        break;
-    case SDLK_b:
-        kk = kk == 8 ? kk+1 : 0;
-        break;
-    default:
-        kk == 0;
     }
 }
 
@@ -193,16 +153,9 @@ int main(int argc, char *argv[]) {
                 case SDLK_UP:
                     throttle = 1;
                     break;
-
-                }
-                kk_check(event.key.keysym.sym);
-                break;
-            case SDL_KEYUP:
-                switch(event.key.keysym.sym) {
-                case SDLK_UP:
+                case SDLK_DOWN:
                     throttle = -1;
                     break;
-
                 }
                 break;
             }

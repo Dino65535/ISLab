@@ -526,7 +526,7 @@ int main(int argc, char *argv[]) {
         printf("SDL Could not initializes\n");
         exit(40);
     }
-    window = SDL_CreateWindow("IC Simulator", 1000, 300, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("IC Simulator", 1000, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }

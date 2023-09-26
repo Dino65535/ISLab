@@ -129,14 +129,12 @@ int main(int argc, char *argv[]) {
                 }
             case SDL_KEYDOWN:
                 switch(event.key.keysym.sym) {
-
                 case SDLK_u:
                     send_AC_state(1);
                     break;
                 case SDLK_i:
                     send_AC_state(0);
                     break;
-
                 }
             }
         }
