@@ -9,7 +9,11 @@
       sudo apt install libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev can-utils
 
 ### 執行步驟
-首先使用設定腳本開啟虛擬 can 的 interface (預設名稱是vcan0)
+首先編譯檔案，cd到資料夾內  
+
+    make
+
+之後使用設定腳本開啟虛擬 can 的 interface (預設名稱是vcan0)
 
     ./setup_vcan.sh
 
