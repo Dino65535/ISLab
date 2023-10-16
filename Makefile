@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I/usr/include/SDL2
 LDFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf
-OV=-fno-stack-protector -z execstack -no-pie
+OV=-fno-stack-protector -z execstack -no-pie -g
 
 all: AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
 
