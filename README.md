@@ -17,14 +17,15 @@
 
     ./setup_vcan.sh
 
-接著開啟儀表板
+打開所有視窗
 
-    ./ICSim vcan0
-
-然後打開所有設備
-
-    ./ECU.sh vcan0
+    ./ISLab.sh vcan0
 ***
 關閉時可以輸入腳本來快速關閉所有畫面
 
     ./close.sh
+
+***
+腳本執行不了，可能是沒有權限  
+
+    chmod +x ISLab.sh
