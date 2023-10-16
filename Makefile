@@ -1,42 +1,43 @@
-CC=gcc
-CFLAGS=-I/usr/include/SDL2
-LDFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf
-OV=-fno-stack-protector -z execstack -no-pie -g
-
+parameter = -I/usr/include/SDL2
+lib = -lSDL2 -lSDL2_image -lSDL2_ttf
+protect = -fno-stack-protector -z execstack -no-pie -g
+dir = source/
 all: AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
 
-AC: AC.c 
-	$(CC) $(CFLAGS) -o AC AC.c   $(LDFLAGS)
+AC: $(dir)AC.c 
+	@gcc $(dir)AC.c -o AC $(lib) $(parameter)
 
-Battery: Battery.c cJSON.c
-	$(CC) $(CFLAGS) -o Battery Battery.c cJSON.c  $(LDFLAGS)
+Battery: $(dir)Battery.c $(dir)cJSON.c
+	@gcc $(dir)Battery.c $(dir)cJSON.c -o Battery $(lib) $(parameter)
 
-Brake: Brake.c
-	$(CC) $(CFLAGS) -o Brake Brake.c $(LDFLAGS)
+Brake: $(dir)Brake.c
+	@gcc $(dir)Brake.c -o Brake $(lib) $(parameter)
 
-Cardoor: Cardoor.c
-	$(CC) $(CFLAGS) -o Cardoor Cardoor.c  $(LDFLAGS)
+Cardoor: $(dir)Cardoor.c
+	@gcc $(dir)Cardoor.c -o Cardoor $(lib) $(parameter)
 
-Dashboard: Dashboard.c
-	$(CC) $(CFLAGS) -o Dashboard Dashboard.c  $(LDFLAGS)
+Dashboard: $(dir)Dashboard.c
+	@gcc $(dir)Dashboard.c -o Dashboard $(lib) $(parameter)
 
-ICSim: ICSim.c
-	$(CC) $(CFLAGS) -o ICSim ICSim.c  $(LDFLAGS)
+ICSim: $(dir)ICSim.c
+	@gcc $(dir)ICSim.c -o ICSim $(lib) $(parameter)
 
-ICSim_victim: ICSim_victim.c
-	$(CC) $(CFLAGS) -o ICSim_victim ICSim_victim.c  $(LDFLAGS)
+ICSim_victim: $(dir)ICSim_victim.c
+	@gcc $(dir)ICSim_victim.c -o ICSim_victim $(lib) $(parameter)
 
-Park: Park.c
-	$(CC) $(CFLAGS) -o Park Park.c  $(LDFLAGS)
+Park: $(dir)Park.c
+	@gcc $(dir)Park.c -o Park $(lib) $(parameter)
 
-Seatbelt: Seatbelt.c
-	$(CC) $(CFLAGS) -o Seatbelt Seatbelt.c $(LDFLAGS)
+Seatbelt: $(dir)Seatbelt.c
+	@gcc $(dir)Seatbelt.c -o Seatbelt $(lib) $(parameter)
 
-Turnsignal: Turnsignal.c
-	$(CC) $(CFLAGS) -o Turnsignal Turnsignal.c  $(LDFLAGS)
+Turnsignal: $(dir)Turnsignal.c
+	@gcc $(dir)Turnsignal.c -o Turnsignal $(lib) $(parameter)
 
-CVE-2022-33218: CVE-2022-33218.c
-	$(CC) $(CFLAGS) -o CVE-2022-33218 CVE-2022-33218.c $(LDFLAGS) $(OV)
-
+CVE-2022-33218: $(dir)CVE-2022-33218.c
+	@gcc $(dir)CVE-2022-33218.c -o CVE-2022-33218 $(lib) $(parameter) $(protect) 
+	@echo "make down"
+	
 clean:
-	rm -rf AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
+	@rm -rf AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
+	@echo "clean down"
