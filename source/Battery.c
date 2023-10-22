@@ -28,7 +28,7 @@
 #define SCREEN_HEIGHT 250
 
 #define BUF_SIZE 1024
-#define SERVER_IP "127.0.0.1"
+#define SERVER_IP "10.98.3.120"
 #define UDP_PORT 15120
 
 
