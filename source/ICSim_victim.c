@@ -83,6 +83,7 @@ SDL_Texture *park_yellow_tex = NULL;
 SDL_Texture *park_white_tex = NULL;
 SDL_Texture *seatbelt_red_tex = NULL;
 SDL_Texture *seatbelt_white_tex = NULL;
+SDL_Texture *degree_tex = NULL;
 //battery SDL & font==================
 int power = 100, times = 0;;
 bool charge = false;
@@ -97,6 +98,7 @@ SDL_Rect battery_green_rect = { 550, 100, 80, 160}; //+10
 SDL_Rect battery_empty_rect = { 550, 100, 80, 160};
 SDL_Rect font_rect = { 550, 20, 80, 80 };
 SDL_Rect AC_rect = { 0, 0, 140, 90};
+SDL_Rect degree_rect = { 0, 90, 140, 70};
 SDL_Rect brake_rect = { 0, 250, 70, 70};
 SDL_Rect park_rect = { 90, 250, 70, 70};
 SDL_Rect seatbelt_rect = { 180, 250, 80, 80};
@@ -163,6 +165,12 @@ void update_AC() {
         SDL_RenderFillRect(renderer, &AC_rect);
         SDL_RenderCopy(renderer, AC_white_tex, NULL, &AC_rect);
     }
+}
+
+void update_degree() {
+    SDL_RenderFillRect(renderer, &degree_rect);
+    SDL_RenderCopy(renderer, degree_tex, NULL, &degree_rect);
+    
 }
 
 void update_brake() {
@@ -307,7 +315,7 @@ void redraw_ic() {
     update_brake();
     update_seatbelt();
     update_park();
-
+    update_degree();
     SDL_RenderPresent(renderer);
 }
 
@@ -467,6 +475,7 @@ void update_charge_state(struct canfd_frame *cf, int maxdlen) {
 		SDL_RenderPresent(renderer);   
     }
 }
+
 int main(int argc, char *argv[]) {
     struct ifreq ifr;
     struct sockaddr_can addr;
@@ -474,7 +483,7 @@ int main(int argc, char *argv[]) {
     struct iovec iov;
     struct msghdr msg;
     struct cmsghdr *cmsg;
-    struct timeval tv, timeout_config = { 0, 0 };
+    struct timeval tv, timeout_config = {0, 0};
     fd_set rdfs;
     char ctrlmsg[CMSG_SPACE(sizeof(struct timeval)) + CMSG_SPACE(sizeof(__u32))];
     int running = 1;
@@ -570,6 +579,9 @@ int main(int argc, char *argv[]) {
     brake_yellow_tex = SDL_CreateTextureFromSurface(renderer, brake_yellow);
     SDL_Surface *brake_white = IMG_Load(get_data("brake_white.png"));
     brake_white_tex = SDL_CreateTextureFromSurface(renderer, brake_white);
+    //degree
+    SDL_Surface *degree = IMG_Load(get_data("degree.png"));
+    degree_tex = SDL_CreateTextureFromSurface(renderer, degree);
 
     speed_rect.x = 212;
     speed_rect.y = 175;
@@ -680,6 +692,7 @@ int main(int argc, char *argv[]) {
     SDL_DestroyTexture(needle_tex);
     SDL_DestroyTexture(sprite_tex);
     SDL_DestroyTexture(power_font_texture);
+    SDL_DestroyTexture(degree_tex);
     SDL_FreeSurface(font_surface);
     SDL_FreeSurface(battery_empty);
     SDL_FreeSurface(battery_green);
@@ -693,6 +706,7 @@ int main(int argc, char *argv[]) {
     SDL_FreeSurface(image);
     SDL_FreeSurface(needle);
     SDL_FreeSurface(sprites);
+    SDL_FreeSurface(degree);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
