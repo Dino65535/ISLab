@@ -2,7 +2,7 @@ parameter = -I/usr/include/SDL2
 lib = -lSDL2 -lSDL2_image -lSDL2_ttf
 protect = -fno-stack-protector -z execstack -no-pie -g
 dir = source/
-all: AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
+all: AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal
 
 AC: $(dir)AC.c 
 	@gcc $(dir)AC.c -o AC $(lib) $(parameter)
@@ -33,11 +33,7 @@ Seatbelt: $(dir)Seatbelt.c
 
 Turnsignal: $(dir)Turnsignal.c
 	@gcc $(dir)Turnsignal.c -o Turnsignal $(lib) $(parameter)
-
-CVE-2022-33218: $(dir)CVE-2022-33218.c
-	@gcc $(dir)CVE-2022-33218.c -o CVE-2022-33218 $(lib) $(parameter) $(protect) 
-	@echo "make down"
 	
 clean:
-	@rm -rf AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal CVE-2022-33218
+	@rm -rf AC Battery Brake Cardoor Dashboard ICSim ICSim_victim Park Seatbelt Turnsignal
 	@echo "clean down"

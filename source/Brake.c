@@ -19,8 +19,8 @@
 #endif
 
 #define DEFAULT_brake_ID 600
-#define SCREEN_WIDTH 300
-#define SCREEN_HEIGHT 250
+#define SCREEN_WIDTH 200
+#define SCREEN_HEIGHT 150
 
 int s; // socket
 struct canfd_frame cf;

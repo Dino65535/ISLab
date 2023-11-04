@@ -84,6 +84,7 @@ SDL_Texture *park_white_tex = NULL;
 SDL_Texture *seatbelt_red_tex = NULL;
 SDL_Texture *seatbelt_white_tex = NULL;
 SDL_Texture *degree_tex = NULL;
+SDL_Texture *logo_tex = NULL;
 //battery SDL & font==================
 int power = 100, times = 0;;
 bool charge = false;
@@ -102,7 +103,7 @@ SDL_Rect degree_rect = { 0, 90, 140, 70};
 SDL_Rect brake_rect = { 0, 250, 70, 70};
 SDL_Rect park_rect = { 90, 250, 70, 70};
 SDL_Rect seatbelt_rect = { 180, 250, 80, 80};
-
+SDL_Rect logo_rect = {307, 230, 80, 80};
 
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -170,6 +171,11 @@ void update_AC() {
 void update_degree() {
     SDL_RenderFillRect(renderer, &degree_rect);
     SDL_RenderCopy(renderer, degree_tex, NULL, &degree_rect);
+}
+
+void update_logo() {
+    SDL_RenderFillRect(renderer, &logo_rect);
+    SDL_RenderCopy(renderer, logo_tex, NULL, &logo_rect);
 }
 
 void update_brake() {
@@ -315,6 +321,7 @@ void redraw_ic() {
     update_seatbelt();
     update_park();
     update_degree();
+    update_logo();
 
     SDL_RenderPresent(renderer);
 }
@@ -492,7 +499,7 @@ int main(int argc, char *argv[]) {
     TTF_Init();
     power_string = (char*)malloc(5 * sizeof(char)); 
     sprintf(power_string, "%d%%", power);
-    font = TTF_OpenFont("font.ttc", 30);
+    font = TTF_OpenFont("./source/font.ttc", 30);
     TTF_SizeUTF8(font, power_string, 0, 0);
 
     SDL_Event event;
@@ -535,7 +542,7 @@ int main(int argc, char *argv[]) {
         printf("SDL Could not initializes\n");
         exit(40);
     }
-    window = SDL_CreateWindow("IC Simulator", 1000, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("IC Simulator", 700, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); // | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }
@@ -582,6 +589,9 @@ int main(int argc, char *argv[]) {
     //degree
     SDL_Surface *degree = IMG_Load(get_data("degree.png"));
     degree_tex = SDL_CreateTextureFromSurface(renderer, degree);
+    //logo
+    SDL_Surface *logo = IMG_Load(get_data("nchc_logo.png"));
+    logo_tex = SDL_CreateTextureFromSurface(renderer, logo);
 
     speed_rect.x = 212;
     speed_rect.y = 175;
@@ -685,6 +695,7 @@ int main(int argc, char *argv[]) {
     SDL_DestroyTexture(sprite_tex);
     SDL_DestroyTexture(power_font_texture);
     SDL_DestroyTexture(degree_tex);
+    SDL_DestroyTexture(logo_tex);
     SDL_FreeSurface(font_surface);
     SDL_FreeSurface(battery_empty);
     SDL_FreeSurface(battery_green);
@@ -699,6 +710,7 @@ int main(int argc, char *argv[]) {
     SDL_FreeSurface(needle);
     SDL_FreeSurface(sprites);
     SDL_FreeSurface(degree);
+    SDL_FreeSurface(logo);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();

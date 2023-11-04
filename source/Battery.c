@@ -24,8 +24,8 @@
 
 #define DEFAULT_battery_ID 700
 #define DEFAULT_charge_ID 001
-#define SCREEN_WIDTH 300
-#define SCREEN_HEIGHT 250
+#define SCREEN_WIDTH 200
+#define SCREEN_HEIGHT 150
 
 #define BUF_SIZE 1024
 #define SERVER_IP "10.98.3.120"
@@ -570,7 +570,7 @@ int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Surface *screenSurface = NULL;
     
-    window = SDL_CreateWindow("Battery", 0, 320, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Battery", 0, 220, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if(window == NULL) {
         printf("Window could not be shown\n");
     }
