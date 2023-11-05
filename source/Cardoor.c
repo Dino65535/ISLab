@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
   SDL_Window *window = NULL;
   SDL_Surface *screenSurface = NULL;
   
-  window = SDL_CreateWindow("Cardoor", 420, 220, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("Cardoor", 470, 215, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   if(window == NULL) {
         printf("Window could not be shown\n");
   }
