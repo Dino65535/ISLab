@@ -620,67 +620,68 @@ int main(int argc, char *argv[]) {
         	}
     	}
         
-        if(rec){
-	        nbytes = recvmsg(can, &msg, 0);
-	        if (nbytes < 0) {
-	            perror("read");
-	            return 1;
-	        }
-	        if ((size_t)nbytes == CAN_MTU)
-	            maxdlen = CAN_MAX_DLEN;
-	        else if ((size_t)nbytes == CANFD_MTU)
-	            maxdlen = CANFD_MAX_DLEN;
-	        else {
-	            fprintf(stderr, "read: incomplete CAN frame\n");
-	            return 1;
-	        }
-	        for (cmsg = CMSG_FIRSTHDR(&msg);
-	                cmsg && (cmsg->cmsg_level == SOL_SOCKET);
-	                cmsg = CMSG_NXTHDR(&msg,cmsg)) {
-	            if (cmsg->cmsg_type == SO_TIMESTAMP)
-	                tv = *(struct timeval *)CMSG_DATA(cmsg);
-	            else if (cmsg->cmsg_type == SO_RXQ_OVFL)
-	                //dropcnt[i] = *(__u32 *)CMSG_DATA(cmsg);
-	                fprintf(stderr, "Dropped packet\n");
-	        }
+	    nbytes = recvmsg(can, &msg, 0);
+	    if (nbytes < 0) {
+	        perror("read");
+	        return 1;
+	    }
+	    if ((size_t)nbytes == CAN_MTU)
+	        maxdlen = CAN_MAX_DLEN;
+	    else if ((size_t)nbytes == CANFD_MTU)
+	        maxdlen = CANFD_MAX_DLEN;
+	    else {
+	        fprintf(stderr, "read: incomplete CAN frame\n");
+	        return 1;
+	    }
+	    for (cmsg = CMSG_FIRSTHDR(&msg);
+	            cmsg && (cmsg->cmsg_level == SOL_SOCKET);
+	            cmsg = CMSG_NXTHDR(&msg,cmsg)) {
+	        if (cmsg->cmsg_type == SO_TIMESTAMP)
+	            tv = *(struct timeval *)CMSG_DATA(cmsg);
+	        else if (cmsg->cmsg_type == SO_RXQ_OVFL)
+	            //dropcnt[i] = *(__u32 *)CMSG_DATA(cmsg);
+	            fprintf(stderr, "Dropped packet\n");
+	    }
 
-	        if(frame.can_id == DEFAULT_DOOR_ID || frame.can_id == (DEFAULT_DOOR_ID-1)) update_door_status(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_SIGNAL_ID || frame.can_id == (DEFAULT_SIGNAL_ID-1)) update_signal_status(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_AC_ID || frame.can_id == (DEFAULT_AC_ID-1)) update_AC_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_battery_ID || frame.can_id == (DEFAULT_battery_ID-1)) update_battery_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_brake_ID || frame.can_id == (DEFAULT_brake_ID-1)) update_brake_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_park_ID || frame.can_id == (DEFAULT_park_ID-1)) update_park_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_save_ID || frame.can_id == (DEFAULT_save_ID-1)) update_seatbelt_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_charge_ID || frame.can_id == (DEFAULT_charge_ID-1)) update_charge_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_SPEED_ID || frame.can_id == (DEFAULT_SPEED_ID-1)) {
-                if(frame.can_id == 579) { //under attack
-                    injection = true;
-                }
-                if(!injection || frame.can_id == 579) {
-                    update_speed_status(&frame, maxdlen);
-                }
+	    if(frame.can_id == DEFAULT_DOOR_ID || frame.can_id == (DEFAULT_DOOR_ID-1)) update_door_status(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_SIGNAL_ID || frame.can_id == (DEFAULT_SIGNAL_ID-1)) update_signal_status(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_AC_ID || frame.can_id == (DEFAULT_AC_ID-1)) update_AC_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_battery_ID || frame.can_id == (DEFAULT_battery_ID-1)) update_battery_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_brake_ID || frame.can_id == (DEFAULT_brake_ID-1)) update_brake_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_park_ID || frame.can_id == (DEFAULT_park_ID-1)) update_park_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_save_ID || frame.can_id == (DEFAULT_save_ID-1)) update_seatbelt_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_charge_ID || frame.can_id == (DEFAULT_charge_ID-1)) update_charge_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_SPEED_ID || frame.can_id == (DEFAULT_SPEED_ID-1)) {
+            if(frame.can_id == 579) { //under attack
+                injection = true;
+            }
+            if(!injection || frame.can_id == 579) {
+                update_speed_status(&frame, maxdlen);
+            }
 	        	
-	        	times++;
-	        	if(times >= 100 && !charge){
-	        		times = 0;
+	       	times++;
+	       	if(times >= 100 && !charge){
+	        	times = 0;
 
-	        		power-=2;
-	        		if(power < 0) power = 0;
-	        		battery_green_rect.y += 3;
-        			battery_green_rect.h -= 3;
+	        	power-=2;
+	        	if(power < 0) power = 0;
+	        	battery_green_rect.y += 3;
+        		battery_green_rect.h -= 3;
 	      
-	        		power_string = (char*)malloc(5 * sizeof(char)); 
-				    sprintf(power_string, "%d%%", power);
-				    TTF_SizeUTF8(font, power_string, 0, 0);
-				    font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
-				    power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+	        	power_string = (char*)malloc(5 * sizeof(char)); 
+				sprintf(power_string, "%d%%", power);
+				TTF_SizeUTF8(font, power_string, 0, 0);
+				font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
+				power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
 
-				    update_battery();
-				    SDL_RenderPresent(renderer);
-	        	}
+				update_battery();
+				SDL_RenderPresent(renderer);
 	        }
-            if(frame.can_id == 123)injection = false;
-    	}
+	    }
+
+        if(frame.can_id == 291){
+            injection = false;
+        }
     }
     free(power_string);
     TTF_CloseFont(font);
