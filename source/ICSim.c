@@ -647,9 +647,7 @@ int main(int argc, char *argv[]) {
 
     // Draw the IC
     redraw_ic();
-    bool rec = true;
     
-
     while(running) {
         while( SDL_PollEvent(&event) != 0 ) {
             switch(event.type) {
@@ -666,7 +664,6 @@ int main(int argc, char *argv[]) {
         	}
     	}
         
-        if(rec){
 	        nbytes = recvmsg(can, &msg, 0);
 	        if (nbytes < 0) {
 	            perror("read");
@@ -690,45 +687,39 @@ int main(int argc, char *argv[]) {
 	                fprintf(stderr, "Dropped packet\n");
 	        }
 
-	        if(frame.can_id == DEFAULT_DOOR_ID) update_door_status(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_SIGNAL_ID) update_signal_status(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_AC_ID) update_AC_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_battery_ID) update_battery_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_brake_ID) update_brake_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_park_ID) update_park_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_save_ID) update_seatbelt_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_charge_ID) update_charge_state(&frame, maxdlen);
-	        if(frame.can_id == DEFAULT_SPEED_ID) {update_speed_status(&frame, maxdlen);
-	        	times++;
-	        	if(times%100 == 0 && !charge){
-	        		power-=2;
-	        		if(power < 0) power = 0;
-	        		battery_green_rect.y += 3;
-        			battery_green_rect.h -= 3;
+	    if(frame.can_id == DEFAULT_DOOR_ID) update_door_status(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_SIGNAL_ID) update_signal_status(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_AC_ID) update_AC_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_battery_ID) update_battery_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_brake_ID) update_brake_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_park_ID) update_park_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_save_ID) update_seatbelt_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_charge_ID) update_charge_state(&frame, maxdlen);
+	    if(frame.can_id == DEFAULT_SPEED_ID) {update_speed_status(&frame, maxdlen);
+	        times++;
+	        if(times%100 == 0 && !charge){
+	        	power-=2;
+	        	if(power < 0) power = 0;
+	        	battery_green_rect.y += 3;
+        		battery_green_rect.h -= 3;
 	      
-	        		power_string = (char*)malloc(5 * sizeof(char)); 
-				    sprintf(power_string, "%d%%", power);
-				    TTF_SizeUTF8(font, power_string, 0, 0);
-				    font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
-				    power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+	        	power_string = (char*)malloc(5 * sizeof(char)); 
+				sprintf(power_string, "%d%%", power);
+				TTF_SizeUTF8(font, power_string, 0, 0);
+				font_surface = TTF_RenderUTF8_Solid(font, power_string, color);
+				power_font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
 
-				    update_battery();
-				    SDL_RenderPresent(renderer);
-	        	}
-
-                if(times >= 500){
-                    times = 0;
-
-                    send_MSG_to_DB(carDataArray[CarData_index++]);
-                    CarData_index %= 15;
-                }
+				update_battery();
+				SDL_RenderPresent(renderer);
 	        }
 
-	        if(frame.can_id == 0){
-	            rec = false;
-	            charge = true;
-	        }
-    	}
+            if(times >= 500){
+                times = 0;
+
+                send_MSG_to_DB(carDataArray[CarData_index++]);
+                CarData_index %= 15;
+            }
+	   }
     }
     free(power_string);
     TTF_CloseFont(font);

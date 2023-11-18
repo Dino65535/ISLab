@@ -655,7 +655,6 @@ int main(int argc, char *argv[]) {
 	        if(frame.can_id == DEFAULT_SPEED_ID || frame.can_id == (DEFAULT_SPEED_ID-1)) {
                 if(frame.can_id == 579) { //under attack
                     injection = true;
-                    times--;
                 }
                 if(!injection || frame.can_id == 579) {
                     update_speed_status(&frame, maxdlen);
@@ -680,11 +679,7 @@ int main(int argc, char *argv[]) {
 				    SDL_RenderPresent(renderer);
 	        	}
 	        }
-
-	        if(frame.can_id == 0){
-	            rec = false;
-	            charge = true;
-	        }
+            if(frame.can_id == 123)injection = false;
     	}
     }
     free(power_string);
